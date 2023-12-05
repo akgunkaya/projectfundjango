@@ -1,0 +1,44 @@
+{% extends "myapp/base.html" %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<h2>Sign Up</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+
+  <div class="form-group">
+    {{ form.username.label_tag }} {{ form.username }}
+    {% for error in form.username.errors %}
+      <div class="error">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="form-group">
+    {{ form.email.label_tag }} {{ form.email }}
+    {% for error in form.email.errors %}
+      <div class="error">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="form-group">
+    {{ form.password1.label_tag }} {{ form.password1 }}
+    {% for error in form.password1.errors %}
+      <div class="error">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="form-group">
+    {{ form.password2.label_tag }} {{ form.password2 }}
+    {% for error in form.password2.errors %}
+      <div class="error">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Sign Up</button>
+</form>
+
+<p>Have an account? <a href="/login">Login</a>!</p>
+<p><a href="/password-reset">Forgot your password?</a></p>
+
+{% endblock %}
