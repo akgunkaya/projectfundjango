@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Tasks{% endblock %}
+
+{% block content %}
+<!-- Include the task form -->
+{% include "tasks/partials/task_form.html" with form=form %}
+
+<!-- This div will be updated with the list of tasks -->
+<div id="tasks-response">
+    {% include "tasks/partials/list_tasks.html" with tasks=tasks %}
+</div>
+
+<!-- Error display -->
+{% if error %}
+<div id="tasks-error">
+    {{ error }}
+</div>
+{% endif %}
+
+{% endblock %}
