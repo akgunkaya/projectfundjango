@@ -4,7 +4,7 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from .models import Task, Organization
+from .models import Task, Organization, UserProfile
 
 # Create your views here.
 # Home page
@@ -87,16 +87,18 @@ def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
     error = None        
-
-    # TODO the user profile model needs to be updated with a current selected organization if its the first created org
+    
     form = CreateOrganizationForm()   
     if request.method == 'POST':
         form = CreateOrganizationForm(request.POST)
         if form.is_valid():
             organization = form.save(commit=False)  # Create a new organization instance but don't save it yet
             organization.save()
-            organization.users.add(current_user)          
-            
+            organization.users.add(current_user)                      
+            if (len(organizations) == 1):
+                user_profile, created = UserProfile.objects.get_or_create(user=current_user)
+                user_profile.selected_organisation = organization
+                user_profile.save()
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks
                 return render(request, 'organizations/partials/list_organizations.html', {'organizations': organizations})
