@@ -1,6 +1,13 @@
 from django.db import models
+from django.contrib.auth.models import User
 
-# Create your models here.
+class Organization(models.Model):
+    name = models.CharField(max_length=100)
+    users = models.ManyToManyField(User)
+
+    def __str__(self):
+        return self.name
+
 class Task(models.Model): 
     STATUS_CHOICES = [
     ('TODO', 'To Do'),
@@ -11,6 +18,8 @@ class Task(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     due_date = models.DateField()
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)  
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

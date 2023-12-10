@@ -1,4 +1,8 @@
 {% for task in tasks %}
-  <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>
-  <button hx-post=></button>
+  <div id="task-item-{{ task.id }}">
+    <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>
+    <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#task-item-{{ task.id }}" hx-swap="outerHTML">
+      Delete
+    </button>
+  </div>
 {% endfor %}

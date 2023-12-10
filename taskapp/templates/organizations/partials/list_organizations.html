@@ -1,0 +1,8 @@
+{% for organization in organizations %}
+  <div id="organization-item-{{ organization.id }}">
+    <li>{{ organization }} </li>
+    <button hx-post="{% url 'delete_organization' organization.id %}" hx-confirm="Are you sure?" hx-target="#organization-item-{{ organization.id }}" hx-swap="outerHTML">
+      Delete
+    </button>
+  </div>
+{% endfor %}

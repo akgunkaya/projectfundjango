@@ -1,8 +1,11 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout 
-from .forms import UserCreationForm, LoginForm, CreateTaskForm
+from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm
 from django.contrib.auth.decorators import login_required
-from .models import Task
+from django.contrib.auth.models import User
+from django.http import HttpResponse
+from .models import Task, Organization
+
 
 
 
@@ -42,17 +45,23 @@ def user_logout(request):
     logout(request)
     return redirect('/login')
 
+# TODO implemenet functionality that user cannot see tasks in organizations they are not part of this needs to be server side restricted
 @login_required
 def tasks(request):
     form = CreateTaskForm()
-    tasks = Task.objects.all()
+    current_user = request.user
+    user_organizations = current_user.organization_set.all()  
+    tasks = Task.objects.filter(organization__in=user_organizations) 
     error = None
 
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid():
             # Save the new task to the database
-            form.save()
+            task = form.save(commit=False)
+            # TODO this needs to be set to current organization
+            task.organization = some_organization_instance  # Set the organization here
+            task.save()
             # Check if the request is an HTMX request
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks
@@ -70,5 +79,43 @@ def tasks(request):
     # For a standard GET request, render the entire tasks page
     return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})
 
-def delete_tasks(request): 
-    task = Task.objects.get(id=1)
+@login_required
+def delete_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)
+    task.delete()
+    return HttpResponse('') 
+
+@login_required
+def organizations(request):
+    current_user = request.user
+    organizations = current_user.organization_set.all()  
+    error = None    
+
+    # TODO need to set a current organization even though user can create many organizations and be part of them
+    form = CreateOrganizationForm()   
+    if request.method == 'POST':
+        form = CreateOrganizationForm(request.POST)
+        if form.is_valid():
+            organization = form.save(commit=False)  # Create a new organization instance but don't save it yet
+            organization.save()
+            organization.users.add(current_user)
+            if request.headers.get('HX-Request'):
+                # Return only the list to update the part of the page with tasks
+                return render(request, 'organizations/partials/list_organizations.html', {'organizations': organizations})
+            else:
+                # For non-HTMX requests, redirect to the main tasks page
+                return redirect('organizations')  
+        else:
+            error = "Oops, something went wrong."            
+
+        
+    if request.headers.get('HX-Request'):        
+        return render(request, 'organizations/partials/create_organization_form.html', {'form': form, 'organizations': organizations, 'error': error})
+
+    return render(request, 'organizations/organizations.html', {'form': form, 'organizations': organizations, 'error': error})
+
+@login_required
+def delete_organization(request, organization_id):
+    organization = get_object_or_404(Organization, pk=organization_id)
+    organization.delete()
+    return HttpResponse('') 

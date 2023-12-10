@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Organizations{% endblock %}
+
+{% block content %}
+
+{% include "organizations/partials/create_organization_form.html" with form=form %}
+<div id="organizations-response">
+  {% include "organizations/partials/list_organizations.html" with organizations=organizations %}
+</div>
+{% if error %}
+<div id="organizations-error">
+    {{ error }}
+</div>
+{% endif %}
+{% endblock %}
