@@ -6,9 +6,6 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from .models import Task, Organization
 
-
-
-
 # Create your views here.
 # Home page
 def index(request):
@@ -89,16 +86,17 @@ def delete_task(request, task_id):
 def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
-    error = None    
+    error = None        
 
-    # TODO need to set a current organization even though user can create many organizations and be part of them
+    # TODO the user profile model needs to be updated with a current selected organization if its the first created org
     form = CreateOrganizationForm()   
     if request.method == 'POST':
         form = CreateOrganizationForm(request.POST)
         if form.is_valid():
             organization = form.save(commit=False)  # Create a new organization instance but don't save it yet
             organization.save()
-            organization.users.add(current_user)
+            organization.users.add(current_user)          
+            
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks
                 return render(request, 'organizations/partials/list_organizations.html', {'organizations': organizations})

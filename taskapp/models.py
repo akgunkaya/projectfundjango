@@ -26,3 +26,10 @@ class Task(models.Model):
     
     def __str__(self):
         return self.title
+    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    selected_organisation = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)    
+    
+    def __str__(self):
+        return self.user.username
