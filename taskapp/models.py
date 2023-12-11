@@ -29,7 +29,7 @@ class Task(models.Model):
     
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    selected_organisation = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)    
+    selected_organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)    
     
     def __str__(self):
         return self.user.username

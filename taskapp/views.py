@@ -56,8 +56,9 @@ def tasks(request):
         if form.is_valid():
             # Save the new task to the database
             task = form.save(commit=False)
-            # TODO this needs to be set to current organization
-            task.organization = some_organization_instance  # Set the organization here
+            user_profile = UserProfile.objects.get(user=current_user) 
+            selected_organization = user_profile.selected_organization                                                           
+            task.organization = selected_organization  # Set the organization here
             task.save()
             # Check if the request is an HTMX request
             if request.headers.get('HX-Request'):
@@ -96,8 +97,8 @@ def organizations(request):
             organization.save()
             organization.users.add(current_user)                      
             if (len(organizations) == 1):
-                user_profile, created = UserProfile.objects.get_or_create(user=current_user)
-                user_profile.selected_organisation = organization
+                user_profile = UserProfile.objects.get(user=current_user)                                                
+                user_profile.selected_organization = organization
                 user_profile.save()
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks

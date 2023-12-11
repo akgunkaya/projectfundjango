@@ -24,7 +24,10 @@
             {% else %}
                 <a href="{% url 'login' %}">Login</a>
                 <a href="{% url 'signup' %}">Sign Up</a>
-            {% endif %}            
+            {% endif %}  
+            <h1>
+                Logged in user: {{user.username}}
+            </h1>          
         </nav>
     </header>
     
