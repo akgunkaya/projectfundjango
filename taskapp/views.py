@@ -42,7 +42,6 @@ def user_logout(request):
     logout(request)
     return redirect('/login')
 
-# TODO implemenet functionality that user cannot see tasks in organizations they are not part of this needs to be server side restricted
 @login_required
 def tasks(request):
     form = CreateTaskForm()
@@ -57,23 +56,28 @@ def tasks(request):
             # Save the new task to the database
             task = form.save(commit=False)
             user_profile = UserProfile.objects.get(user=current_user) 
-            selected_organization = user_profile.selected_organization                                                           
-            task.organization = selected_organization  # Set the organization here
-            task.save()
-            # Check if the request is an HTMX request
-            if request.headers.get('HX-Request'):
-                # Return only the list to update the part of the page with tasks
-                return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks})
+            selected_organization = user_profile.selected_organization 
+            if selected_organization in user_organizations:
+                task.organization = selected_organization  # Set the organization here
+                task.save()                                                               
+                # Check if the request is an HTMX request
+                if request.headers.get('HX-Request'):
+                    # Return only the list to update the part of the page with tasks
+                    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks})
+                else:
+                    # For non-HTMX requests, redirect to the main tasks page
+                    return redirect('tasks')  # Replace 'tasks' with the appropriate URL name
             else:
-                # For non-HTMX requests, redirect to the main tasks page
-                return redirect('tasks')  # Replace 'tasks' with the appropriate URL name
+                error = "You are not authorized to create tasks in this organization."
+                
         else:
             error = "Oops, something went wrong."
 
     # If it's an HTMX request, return only the form
     if request.headers.get('HX-Request'):        
+        # TODO there is a bug when the user tries to create a task without any organisation being set 
         return render(request, 'tasks/partials/task_form.html', {'form': form, 'error': error})
-
+    
     # For a standard GET request, render the entire tasks page
     return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})
 
