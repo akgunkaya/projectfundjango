@@ -46,39 +46,37 @@ def user_logout(request):
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
-    user_organizations = current_user.organization_set.all()  
-    tasks = Task.objects.filter(organization__in=user_organizations) 
+    user_profile = UserProfile.objects.get(user=current_user)
+    selected_organization = user_profile.selected_organization
+
+    # Filter tasks for the selected organization only
+    if selected_organization:
+        tasks = Task.objects.filter(organization=selected_organization)
+    else:
+        tasks = Task.objects.none()  # No tasks if no organization is selected
     error = None
 
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid():
-            # Save the new task to the database
             task = form.save(commit=False)
-            user_profile = UserProfile.objects.get(user=current_user) 
-            selected_organization = user_profile.selected_organization 
-            if selected_organization in user_organizations:
-                task.organization = selected_organization  # Set the organization here
-                task.save()                                                               
-                # Check if the request is an HTMX request
+            if selected_organization:
+                task.organization = selected_organization
+                task.save()
                 if request.headers.get('HX-Request'):
-                    # Return only the list to update the part of the page with tasks
                     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
                 else:
-                    # For non-HTMX requests, redirect to the main tasks page
-                    return redirect('tasks')  # Replace 'tasks' with the appropriate URL name
+                    return redirect('tasks')
             else:
-                error = "You are not authorized to create tasks in this organization."
-                
+                error = "You must select an organization before creating tasks."
         else:
             error = "Oops, something went wrong."
 
-    # If it's an HTMX request, return only the form
-    if request.headers.get('HX-Request'):                        
+    if request.headers.get('HX-Request'):
         return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
-    
-    # For a standard GET request, render the entire tasks page
+
     return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})
+
 
 @login_required
 def delete_task(request, task_id):
@@ -116,10 +114,25 @@ def organizations(request):
     if request.headers.get('HX-Request'):        
         return render(request, 'organizations/partials/create_organization_form.html', {'form': form, 'organizations': organizations, 'error': error})
 
-    return render(request, 'organizations/organizations.html', {'form': form, 'organizations': organizations, 'error': error})
+    selected_organization = UserProfile.objects.get(user=request.user).selected_organization
+    return render(request, 'organizations/organizations.html', {
+        'form': form,
+        'organizations': organizations,
+        'selected_organization': selected_organization,
+        'error': error
+    })
 
 @login_required
 def delete_organization(request, organization_id):
     organization = get_object_or_404(Organization, pk=organization_id)
     organization.delete()
-    return HttpResponse('') 
+    return HttpResponse('')
+
+@login_required
+def set_selected_organization(request, organization_id):
+    organization = get_object_or_404(Organization, pk=organization_id)
+    user_profile = UserProfile.objects.get(user=request.user)
+    user_profile.selected_organization = organization
+    user_profile.save()
+    # TODO dont redirect instead use HTMX to reload only some parts of the page
+    return redirect('organizations')  # Redirect to the organizations page or wherever appropriate
