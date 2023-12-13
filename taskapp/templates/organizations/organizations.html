@@ -8,8 +8,6 @@
   {% include "organizations/partials/list_organizations.html" with organizations=organizations %}
 </div>
 {% if error %}
-<div id="organizations-error">
-    {{ error }}
-</div>
+  {{ error }}
 {% endif %}
 {% endblock %}

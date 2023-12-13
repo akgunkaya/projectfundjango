@@ -63,7 +63,7 @@ def tasks(request):
                 # Check if the request is an HTMX request
                 if request.headers.get('HX-Request'):
                     # Return only the list to update the part of the page with tasks
-                    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks})
+                    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
                 else:
                     # For non-HTMX requests, redirect to the main tasks page
                     return redirect('tasks')  # Replace 'tasks' with the appropriate URL name
@@ -74,9 +74,8 @@ def tasks(request):
             error = "Oops, something went wrong."
 
     # If it's an HTMX request, return only the form
-    if request.headers.get('HX-Request'):        
-        # TODO there is a bug when the user tries to create a task without any organisation being set 
-        return render(request, 'tasks/partials/task_form.html', {'form': form, 'error': error})
+    if request.headers.get('HX-Request'):                        
+        return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
     
     # For a standard GET request, render the entire tasks page
     return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})

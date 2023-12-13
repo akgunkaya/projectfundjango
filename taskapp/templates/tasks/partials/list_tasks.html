@@ -4,5 +4,8 @@
     <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#task-item-{{ task.id }}" hx-swap="outerHTML">
       Delete
     </button>
-  </div>
+  </div> 
 {% endfor %}
+{% if error %}
+  <p>{{ error }}</p>  
+{% endif %}   
