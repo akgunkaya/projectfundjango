@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+import uuid
+
 
 class Organization(models.Model):
     name = models.CharField(max_length=100)
@@ -20,6 +22,7 @@ class Task(models.Model):
     due_date = models.DateField()
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)  
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    collaborators = models.ManyToManyField(User, related_name='task_collaborators', blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -33,3 +36,18 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return self.user.username
+    
+class Membership(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    date_joined = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return self.user.username
+    
+class OrganizationInvitation(models.Model):
+    email = models.EmailField()
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    token = models.UUIDField(default=uuid.uuid4)
+    is_accepted = models.BooleanField(default=False)
+    

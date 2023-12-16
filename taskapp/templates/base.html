@@ -28,9 +28,11 @@
             <h1>
                 Logged in user: {{user.username}}                
             </h1>  
-            {% if user.userprofile.selected_organization %}
-                <p>Current Organization: {{ user.userprofile.selected_organization }}</p>
-            {% endif %}
+            <div id="current-org">
+                {% if user.userprofile.selected_organization %}
+                    <p>Current Organization: {{ user.userprofile.selected_organization }}</p>
+                {% endif %}
+            </div> 
         </nav>
     </header>
     

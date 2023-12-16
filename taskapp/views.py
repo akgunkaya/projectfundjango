@@ -4,7 +4,9 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from .models import Task, Organization, UserProfile
+from .models import Task, Organization, UserProfile, OrganizationInvitation
+from django.core.mail import send_mail
+
 
 # Create your views here.
 # Home page
@@ -85,6 +87,8 @@ def delete_task(request, task_id):
     return HttpResponse('') 
 
 @login_required
+# TODO Add users to an organization when creating an organization
+# TODO Edit organiazation and allow user to add users to organization
 def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
@@ -123,6 +127,42 @@ def organizations(request):
     })
 
 @login_required
+def send_invitation(request, organization_id):
+    if request.method == "POST":
+        email = request.POST.get('email')
+        organization = Organization.objects.get(id=organization_id)
+        invitation = OrganizationInvitation.objects.create(email=email, organization=organization)
+        
+        # Send email with invitation link (including the token)
+        send_mail(
+            'Organization Invitation',
+            f'Please join our organization by clicking the link: http://127.0.0.1:8000//accept_invite/{invitation.token}/',
+            'akgunkaya12@gmail.com',
+            [email],
+            fail_silently=False,
+        )
+        return redirect('success_page')    
+
+@login_required
+def accept_invitation(request, token):
+    try:
+        invitation = OrganizationInvitation.objects.get(token=token, is_accepted=False)
+    except OrganizationInvitation.DoesNotExist:
+        return render(request, 'error.html', {'message': 'Invalid or expired invitation.'})
+
+    if request.method == "POST":
+        # Assuming the user is already created and logged in
+        user = request.user
+        Membership.objects.create(user=user, organization=invitation.organization)
+        invitation.is_accepted = True
+        invitation.save()
+        return redirect('success_page')  # Redirect to a success page
+
+    return render(request, 'accept_invitation.html', {'invitation': invitation})
+
+
+
+@login_required
 def delete_organization(request, organization_id):
     organization = get_object_or_404(Organization, pk=organization_id)
     organization.delete()
@@ -134,5 +174,5 @@ def set_selected_organization(request, organization_id):
     user_profile = UserProfile.objects.get(user=request.user)
     user_profile.selected_organization = organization
     user_profile.save()
-    # TODO dont redirect instead use HTMX to reload only some parts of the page
-    return redirect('organizations')  # Redirect to the organizations page or wherever appropriate
+    
+    return render(request, 'organizations/partials/current_org.html', {'organization': organization})
