@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout 
-from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm
+from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm, InviteUserForm, TokenAuthForm, OrganizationInvitation
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from .models import Task, Organization, UserProfile, OrganizationInvitation
+from .models import Task, Organization, UserProfile
 from django.core.mail import send_mail
-
+from django.utils import timezone
+from datetime import timedelta
 
 # Create your views here.
 # Home page
@@ -87,18 +88,18 @@ def delete_task(request, task_id):
     return HttpResponse('') 
 
 @login_required
-# TODO Add users to an organization when creating an organization
-# TODO Edit organiazation and allow user to add users to organization
+# TODO give admin rights by defualt to the user who created the organization, they should have ability to remove users from organization and to invite others
 def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
     error = None        
     
-    form = CreateOrganizationForm()   
+    create_organization_form = CreateOrganizationForm()  
+    invite_user_form =  InviteUserForm(user=current_user)
     if request.method == 'POST':
-        form = CreateOrganizationForm(request.POST)
-        if form.is_valid():
-            organization = form.save(commit=False)  # Create a new organization instance but don't save it yet
+        create_organization_form = CreateOrganizationForm(request.POST)
+        if create_organization_form.is_valid():
+            organization = create_organization_form.save(commit=False)  # Create a new organization instance but don't save it yet
             organization.save()
             organization.users.add(current_user)                      
             if (len(organizations) == 1):
@@ -116,51 +117,16 @@ def organizations(request):
 
         
     if request.headers.get('HX-Request'):        
-        return render(request, 'organizations/partials/create_organization_form.html', {'form': form, 'organizations': organizations, 'error': error})
+        return render(request, 'organizations/partials/create_organization_form.html', {'create_organization_form': create_organization_form, 'organizations': organizations, 'error': error})
 
     selected_organization = UserProfile.objects.get(user=request.user).selected_organization
     return render(request, 'organizations/organizations.html', {
-        'form': form,
+        'invite_user_form': invite_user_form,
+        'create_organization_form': create_organization_form,
         'organizations': organizations,
         'selected_organization': selected_organization,
         'error': error
     })
-
-@login_required
-def send_invitation(request, organization_id):
-    if request.method == "POST":
-        email = request.POST.get('email')
-        organization = Organization.objects.get(id=organization_id)
-        invitation = OrganizationInvitation.objects.create(email=email, organization=organization)
-        
-        # Send email with invitation link (including the token)
-        send_mail(
-            'Organization Invitation',
-            f'Please join our organization by clicking the link: http://127.0.0.1:8000//accept_invite/{invitation.token}/',
-            'akgunkaya12@gmail.com',
-            [email],
-            fail_silently=False,
-        )
-        return redirect('success_page')    
-
-@login_required
-def accept_invitation(request, token):
-    try:
-        invitation = OrganizationInvitation.objects.get(token=token, is_accepted=False)
-    except OrganizationInvitation.DoesNotExist:
-        return render(request, 'error.html', {'message': 'Invalid or expired invitation.'})
-
-    if request.method == "POST":
-        # Assuming the user is already created and logged in
-        user = request.user
-        Membership.objects.create(user=user, organization=invitation.organization)
-        invitation.is_accepted = True
-        invitation.save()
-        return redirect('success_page')  # Redirect to a success page
-
-    return render(request, 'accept_invitation.html', {'invitation': invitation})
-
-
 
 @login_required
 def delete_organization(request, organization_id):
@@ -176,3 +142,93 @@ def set_selected_organization(request, organization_id):
     user_profile.save()
     
     return render(request, 'organizations/partials/current_org.html', {'organization': organization})
+
+@login_required
+def invite_user(request):
+    invite_response = None
+    if request.method == 'POST':
+        form = InviteUserForm(request.POST)
+        if form.is_valid():
+            invitation = form.save(commit=False)  
+            invitation.token_expiry = timezone.now() + timedelta(hours=1)          
+            # Check if user exists
+            try:
+                user = User.objects.get(email=invitation.email)
+            except User.DoesNotExist:
+                # If user does not exist, do not alert the inviter
+                pass
+            else:
+                # Send email with invitation token
+                # TODO Send actual email with an email backend setup currently its just using a dummy email backend
+                # TODO Instead of having the user copy and paste the token they should have it ready maybe it can be passed via the url
+                send_mail(
+                    subject="Organization Invitation",
+                    message=f"You have been invited to join an organization. Please use the following token: {invitation.token} folow this link http://127.0.0.1:8000/organizations/invite-auth/",
+                    from_email="akgunkaya12@gmail.com",
+                    recipient_list=[invitation.email]
+                )
+
+            # Save the invitation            
+            invitation.save()
+            invite_response = 'Invitation Sent!'
+            return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})  # Replace with your template
+        
+@login_required
+def invite_auth(request):
+    current_user = request.user    
+    invite_response = None
+    if not request.user.is_authenticated:
+        invite_response = 'You must be logged in to accept an invitation.'
+        return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+
+    form = TokenAuthForm()
+
+    if request.method == 'POST':
+        form = TokenAuthForm(request.POST)
+        if form.is_valid():
+            token = form.cleaned_data['token']
+
+            try:
+                invitation = OrganizationInvitation.objects.get(token=token)
+                if invitation.is_accepted:
+                    invite_response = 'This invite has already been used.'
+                    return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+                    
+                # Check if the token has expired
+                if invitation.token_expiry and invitation.token_expiry < timezone.now():                
+                    invite_response = 'This invitation has expired.'
+                    return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+                
+
+                # Ensure the logged-in user's email matches the invitation email
+                if invitation.email != current_user.email:                    
+                    invite_response = 'This invitation is not for the current user.'
+                    return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+                
+
+                # Mark the invitation as accepted
+                invitation.is_accepted = True
+                invitation.save()
+
+                # Add the user to the organization
+                organization = invitation.organization
+                organization.users.add(current_user)  # assuming a ManyToMany relationship with members
+                organization.save()
+                
+                invite_response = 'Invitation accepted and organization updated.'
+                return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+            
+
+            except OrganizationInvitation.DoesNotExist:                
+                invite_response = 'Invalid token.'
+                return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+            
+
+        else:            
+            invite_response = 'Invalid form submission.'
+            return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
+        
+
+    return render(request, 'invitations/invitations.html', {'form': form})
+
+

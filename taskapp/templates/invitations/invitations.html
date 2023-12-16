@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Organizations{% endblock %}
+
+{% block content %}
+  <h1>Invite</h1>
+  {% include "invitations/partials/token_auth_form.html"%}
+  <div id="token-auth-response"></div>
+  {% if error %}
+    {{ error }}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,5 @@
+<form hx-post="{% url 'invite_user' %}" hx-target="#invite-response" hx-swap="innerHTML">
+  {% csrf_token %}
+  {{ invite_user_form.as_div }}
+  <button type="submit">Submit</button>
+</form>

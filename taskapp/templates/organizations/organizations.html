@@ -3,10 +3,12 @@
 
 {% block content %}
 
-{% include "organizations/partials/create_organization_form.html" with form=form %}
+{% include "organizations/partials/create_organization_form.html"%}
 <div id="organizations-response">
   {% include "organizations/partials/list_organizations.html" with organizations=organizations %}
 </div>
+{% include "invitations/partials/invite_user_form.html"%}
+<div id="invite-response"></div>
 {% if error %}
   {{ error }}
 {% endif %}

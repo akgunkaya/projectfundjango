@@ -11,4 +11,6 @@ urlpatterns = [
     path('organizations/', views.organizations, name='organizations'),
     path('organizations/delete/<int:organization_id>/', views.delete_organization, name='delete_organization'),
     path('organizations/select/<int:organization_id>/', views.set_selected_organization, name='set_selected_organization'),
+    path('organizations/invite-user/', views.invite_user, name='invite_user'),
+    path('organizations/invite-auth/', views.invite_auth, name='invite_auth'),
 ]

@@ -1,5 +1,5 @@
 <form method="POST" hx-post="{% url 'organizations' %}" hx-target="#organizations-response" hx-swap="innerHTML">
   {% csrf_token %}
-  {{ form.as_div }}
+  {{ create_organization_form.as_div }}
   <button type="submit">Submit</button>
 </form>

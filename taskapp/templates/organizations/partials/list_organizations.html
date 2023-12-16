@@ -1,12 +1,11 @@
 {% for organization in organizations %}
-    <a hx-get="{% url 'set_selected_organization' organization.id %}"
-      hx-target="#current-org"
-      hx-swap="outerHTML"
-      id="organization-item-{{ organization.id }}">
-        <li>{{ organization }}</li>
-    </a>
-    <button hx-post="{% url 'delete_organization' organization.id %}" hx-confirm="Are you sure?" hx-target="#organization-item-{{ organization.id }}" hx-swap="outerHTML">
-      Delete
-    </button>
-  </div>
+  <a hx-get="{% url 'set_selected_organization' organization.id %}"
+    hx-target="#current-org"
+    hx-swap="outerHTML"
+    id="organization-item-{{ organization.id }}">
+      <li>{{ organization }}</li>
+  </a>
+  <button hx-post="{% url 'delete_organization' organization.id %}" hx-confirm="Are you sure?" hx-target="#organization-item-{{ organization.id }}" hx-swap="outerHTML">
+    Delete
+  </button>
 {% endfor %}
