@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm, InviteUserForm, TokenAuthForm, OrganizationInvitation
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from .models import Task, Organization, UserProfile, OrganizationMember
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -80,7 +80,6 @@ def tasks(request):
 
     return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})
 
-
 @login_required
 def delete_task(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
@@ -88,7 +87,7 @@ def delete_task(request, task_id):
     return HttpResponse('') 
 
 @login_required
-# TODO give admin rights by defualt to the user who created the organization, they should have ability to remove users from organization and to invite others
+# TODO only the admin of organization should be able to see the delete organization button and invite user form
 def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
@@ -132,8 +131,13 @@ def organizations(request):
 @login_required
 def delete_organization(request, organization_id):
     organization = get_object_or_404(Organization, pk=organization_id)
+    current_user = request.user
+    member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_admin=True).first()
+    if member is None:
+        # User is not an admin, deny the deletion
+        return HttpResponseForbidden('You are not authorized to delete this organization.')
     organization.delete()
-    return HttpResponse('')
+    return HttpResponse('Organization deleted successfully.')
 
 @login_required
 def set_selected_organization(request, organization_id):
@@ -150,8 +154,16 @@ def invite_user(request):
     if request.method == 'POST':
         form = InviteUserForm(request.POST)
         if form.is_valid():
-            invitation = form.save(commit=False)  
-            invitation.token_expiry = timezone.now() + timedelta(hours=1)          
+            # Check if the current user is admin of the organization
+            current_user = request.user
+            organization = form.cleaned_data.get('organization')  # Assuming the organization is part of the form
+            member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_admin=True).first()
+            if member is None:
+                # User is not an admin, deny the invitation
+                return HttpResponseForbidden('You are not authorized to invite users to this organization.')
+
+            invitation = form.save(commit=False)
+            invitation.token_expiry = timezone.now() + timedelta(hours=1)                    
             # Check if user exists
             try:
                 user = User.objects.get(email=invitation.email)
