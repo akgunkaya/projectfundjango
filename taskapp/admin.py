@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, Organization, UserProfile, OrganizationInvitation
+from .models import Task, Organization, UserProfile, OrganizationInvitation, OrganizationMember
 
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'due_date', 'status')  #
@@ -17,8 +17,12 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 admin.site.register(UserProfile, UserProfileAdmin)
 
-class UserProfileAdmin(admin.ModelAdmin):
+class OrganizationInvitationAdmin(admin.ModelAdmin):
     search_fields = ['user']     
 
-admin.site.register(OrganizationInvitation, UserProfileAdmin)
+admin.site.register(OrganizationInvitation, OrganizationInvitationAdmin)
 
+class OrganizationMemberAdmin(admin.ModelAdmin):
+    search_fields = ['user']     
+
+admin.site.register(OrganizationMember, OrganizationMemberAdmin)

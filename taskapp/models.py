@@ -9,6 +9,23 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+    
+class OrganizationMember(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=False)
+
+    def __str__(self):
+        admin_status = "Admin" if self.is_admin else "Member"
+        return f"{self.user.username} - {admin_status} of {self.organization.name}"
+
+class OrganizationInvitation(models.Model):
+    email = models.EmailField()
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    token = models.UUIDField(default=uuid.uuid4)
+    is_accepted = models.BooleanField(default=False)
+    token_expiry = models.DateTimeField(null=True)
+    
 
 class Task(models.Model): 
     STATUS_CHOICES = [
@@ -20,7 +37,7 @@ class Task(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     due_date = models.DateField()
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)  
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     collaborators = models.ManyToManyField(User, related_name='task_collaborators', blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
@@ -36,11 +53,3 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return self.user.username   
-    
-class OrganizationInvitation(models.Model):
-    email = models.EmailField()
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    token = models.UUIDField(default=uuid.uuid4)
-    is_accepted = models.BooleanField(default=False)
-    token_expiry = models.DateTimeField(null=True)
-    

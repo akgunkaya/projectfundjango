@@ -4,7 +4,7 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from .models import Task, Organization, UserProfile
+from .models import Task, Organization, UserProfile, OrganizationMember
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
@@ -100,8 +100,9 @@ def organizations(request):
         create_organization_form = CreateOrganizationForm(request.POST)
         if create_organization_form.is_valid():
             organization = create_organization_form.save(commit=False)  # Create a new organization instance but don't save it yet
-            organization.save()
-            organization.users.add(current_user)                      
+            organization.save()            
+            organization.users.add(current_user)  
+            OrganizationMember.objects.create(user=current_user,organization=organization,is_admin=True)                                
             if (len(organizations) == 1):
                 user_profile = UserProfile.objects.get(user=current_user)                                                
                 user_profile.selected_organization = organization
@@ -159,8 +160,8 @@ def invite_user(request):
                 pass
             else:
                 # Send email with invitation token
-                # TODO Send actual email with an email backend setup currently its just using a dummy email backend
-                # TODO Instead of having the user copy and paste the token they should have it ready maybe it can be passed via the url
+                # TODO *Nice to have* Send actual email with an email backend setup currently its just using a dummy email backend
+                # TODO *Nice to have* of having the user copy and paste the token they should have it ready maybe it can be passed via the url
                 send_mail(
                     subject="Organization Invitation",
                     message=f"You have been invited to join an organization. Please use the following token: {invitation.token} folow this link http://127.0.0.1:8000/organizations/invite-auth/",
