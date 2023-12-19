@@ -13,10 +13,10 @@ class Organization(models.Model):
 class OrganizationMember(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    is_admin = models.BooleanField(default=False)
+    is_owner = models.BooleanField(default=False)
 
     def __str__(self):
-        admin_status = "Admin" if self.is_admin else "Member"
+        admin_status = "Admin" if self.is_owner else "Member"
         return f"{self.user.username} - {admin_status} of {self.organization.name}"
 
 class OrganizationInvitation(models.Model):

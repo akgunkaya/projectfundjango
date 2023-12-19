@@ -1,7 +1,7 @@
 from django import forms 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Task, Organization, OrganizationInvitation
+from .models import Task, Organization, OrganizationInvitation, OrganizationMember
 
 class SignupForm(UserCreationForm):
     class Meta:
@@ -35,7 +35,11 @@ class InviteUserForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super(InviteUserForm, self).__init__(*args, **kwargs)
         if user is not None:
-            self.fields['organization'].queryset = Organization.objects.filter(users=user)
+            # Filter organizations where the user is an owner
+            owned_organizations = OrganizationMember.objects.filter(
+                user=user, is_owner=True).values_list('organization', flat=True)
+            self.fields['organization'].queryset = Organization.objects.filter(id__in=owned_organizations)
+
 
 class TokenAuthForm(forms.ModelForm):
     class Meta:

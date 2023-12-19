@@ -46,6 +46,7 @@ def user_logout(request):
     return redirect('/login')
 
 @login_required
+# add an is admin field to the organization member model, only admins can delete tasks 
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
@@ -87,11 +88,21 @@ def delete_task(request, task_id):
     return HttpResponse('') 
 
 @login_required
-# TODO only the admin of organization should be able to see the delete organization button and invite user form
+# TODO The organization page should show text next to each organization where user is an owner saying is owner
 def organizations(request):
     current_user = request.user
     organizations = current_user.organization_set.all()  
-    error = None        
+    error = None    
+
+    organizations_with_admin_status = []
+
+    for organization in organizations:
+        is_owner = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).exists()
+        organizations_with_admin_status.append({
+            'organization': organization,
+            'is_owner': is_owner
+        })
+
     
     create_organization_form = CreateOrganizationForm()  
     invite_user_form =  InviteUserForm(user=current_user)
@@ -101,14 +112,14 @@ def organizations(request):
             organization = create_organization_form.save(commit=False)  # Create a new organization instance but don't save it yet
             organization.save()            
             organization.users.add(current_user)  
-            OrganizationMember.objects.create(user=current_user,organization=organization,is_admin=True)                                
+            OrganizationMember.objects.create(user=current_user,organization=organization,is_owner=True)                                
             if (len(organizations) == 1):
                 user_profile = UserProfile.objects.get(user=current_user)                                                
                 user_profile.selected_organization = organization
                 user_profile.save()
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks
-                return render(request, 'organizations/partials/list_organizations.html', {'organizations': organizations})
+                return render(request, 'organizations/partials/list_organizations.html', {'organizations_with_admin_status': organizations_with_admin_status})
             else:
                 # For non-HTMX requests, redirect to the main tasks page
                 return redirect('organizations')  
@@ -116,14 +127,17 @@ def organizations(request):
             error = "Oops, something went wrong."            
 
         
-    if request.headers.get('HX-Request'):        
-        return render(request, 'organizations/partials/create_organization_form.html', {'create_organization_form': create_organization_form, 'organizations': organizations, 'error': error})
+    if request.headers.get('HX-Request'):
+        return render(request, 'organizations/partials/create_organization_form.html', {
+            'create_organization_form': create_organization_form,             
+            'error': error
+        })
 
     selected_organization = UserProfile.objects.get(user=request.user).selected_organization
     return render(request, 'organizations/organizations.html', {
         'invite_user_form': invite_user_form,
         'create_organization_form': create_organization_form,
-        'organizations': organizations,
+        'organizations_with_admin_status': organizations_with_admin_status, 
         'selected_organization': selected_organization,
         'error': error
     })
@@ -132,7 +146,7 @@ def organizations(request):
 def delete_organization(request, organization_id):
     organization = get_object_or_404(Organization, pk=organization_id)
     current_user = request.user
-    member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_admin=True).first()
+    member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).first()
     if member is None:
         # User is not an admin, deny the deletion
         return HttpResponseForbidden('You are not authorized to delete this organization.')
@@ -157,7 +171,7 @@ def invite_user(request):
             # Check if the current user is admin of the organization
             current_user = request.user
             organization = form.cleaned_data.get('organization')  # Assuming the organization is part of the form
-            member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_admin=True).first()
+            member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).first()
             if member is None:
                 # User is not an admin, deny the invitation
                 return HttpResponseForbidden('You are not authorized to invite users to this organization.')
