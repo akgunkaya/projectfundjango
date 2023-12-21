@@ -37,7 +37,7 @@ class InviteUserForm(forms.ModelForm):
         if user is not None:
             # Filter organizations where the user is an owner
             owned_organizations = OrganizationMember.objects.filter(
-                user=user, is_owner=True).values_list('organization', flat=True)
+                user=user, role='OWNER').values_list('organization', flat=True)
             self.fields['organization'].queryset = Organization.objects.filter(id__in=owned_organizations)
 
 

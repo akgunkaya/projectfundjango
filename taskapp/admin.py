@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Task, Organization, UserProfile, OrganizationInvitation, OrganizationMember
 
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'due_date', 'status')  #
+    list_display = ('title', 'due_date', 'status')  
     search_fields = ['title', 'description']       
 
 admin.site.register(Task, TaskAdmin)

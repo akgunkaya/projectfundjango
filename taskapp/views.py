@@ -46,7 +46,7 @@ def user_logout(request):
     return redirect('/login')
 
 @login_required
-# add an is admin field to the organization member model, only admins can delete tasks 
+# TODO add owner to the task, only the owner can delete the task.
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
@@ -88,21 +88,18 @@ def delete_task(request, task_id):
     return HttpResponse('') 
 
 @login_required
-# TODO The organization page should show text next to each organization where user is an owner saying is owner
 def organizations(request):
     current_user = request.user
-    organizations = current_user.organization_set.all()  
-    error = None    
-
-    organizations_with_admin_status = []
-
-    for organization in organizations:
-        is_owner = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).exists()
-        organizations_with_admin_status.append({
+    organization_memberships = OrganizationMember.objects.filter(user=current_user)
+    organizations_with_role_status = []
+    error = None
+    for membership in organization_memberships:
+        organization = membership.organization
+        role = membership.role
+        organizations_with_role_status.append({
             'organization': organization,
-            'is_owner': is_owner
+            'role': role
         })
-
     
     create_organization_form = CreateOrganizationForm()  
     invite_user_form =  InviteUserForm(user=current_user)
@@ -111,15 +108,17 @@ def organizations(request):
         if create_organization_form.is_valid():
             organization = create_organization_form.save(commit=False)  # Create a new organization instance but don't save it yet
             organization.save()            
-            organization.users.add(current_user)  
-            OrganizationMember.objects.create(user=current_user,organization=organization,is_owner=True)                                
-            if (len(organizations) == 1):
-                user_profile = UserProfile.objects.get(user=current_user)                                                
-                user_profile.selected_organization = organization
-                user_profile.save()
+            organizationMember = OrganizationMember.objects.create(user=current_user, organization=organization, role='OWNER')
+            organizations_with_role_status.append({
+                'organization': organization,
+                'role': organizationMember.role
+            })
+            user_profile = UserProfile.objects.get(user=current_user)                                                
+            user_profile.selected_organization = organization
+            user_profile.save()
             if request.headers.get('HX-Request'):
                 # Return only the list to update the part of the page with tasks
-                return render(request, 'organizations/partials/list_organizations.html', {'organizations_with_admin_status': organizations_with_admin_status})
+                return render(request, 'organizations/partials/list_organizations.html', {'organizations_with_role_status': organizations_with_role_status})
             else:
                 # For non-HTMX requests, redirect to the main tasks page
                 return redirect('organizations')  
@@ -137,16 +136,17 @@ def organizations(request):
     return render(request, 'organizations/organizations.html', {
         'invite_user_form': invite_user_form,
         'create_organization_form': create_organization_form,
-        'organizations_with_admin_status': organizations_with_admin_status, 
+        'organizations_with_role_status': organizations_with_role_status, 
         'selected_organization': selected_organization,
         'error': error
     })
 
 @login_required
 def delete_organization(request, organization_id):
+    print(organization_id)
     organization = get_object_or_404(Organization, pk=organization_id)
     current_user = request.user
-    member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).first()
+    member = OrganizationMember.objects.filter(user=current_user, organization=organization, role='OWNER').first()
     if member is None:
         # User is not an admin, deny the deletion
         return HttpResponseForbidden('You are not authorized to delete this organization.')
@@ -171,7 +171,7 @@ def invite_user(request):
             # Check if the current user is admin of the organization
             current_user = request.user
             organization = form.cleaned_data.get('organization')  # Assuming the organization is part of the form
-            member = OrganizationMember.objects.filter(user=current_user, organization=organization, is_owner=True).first()
+            member = OrganizationMember.objects.filter(user=current_user, organization=organization, role='OWNER').first()
             if member is None:
                 # User is not an admin, deny the invitation
                 return HttpResponseForbidden('You are not authorized to invite users to this organization.')
@@ -232,15 +232,19 @@ def invite_auth(request):
                     invite_response = 'This invitation is not for the current user.'
                     return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
                 
+                organization = invitation.organization
+                organizationMember = OrganizationMember.objects.filter(user=current_user, organization=organization)
+
+                if organizationMember: 
+                    invite_response = 'You are already a member of this organization'
+                    return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          
 
                 # Mark the invitation as accepted
                 invitation.is_accepted = True
                 invitation.save()
 
                 # Add the user to the organization
-                organization = invitation.organization
-                organization.users.add(current_user)  # assuming a ManyToMany relationship with members
-                organization.save()
+                OrganizationMember.objects.create(user=current_user, organization=organization, role='MEMBER')                
                 
                 invite_response = 'Invitation accepted and organization updated.'
                 return render(request, 'invitations/partials/invite_response.html', {'invite_response': invite_response})          

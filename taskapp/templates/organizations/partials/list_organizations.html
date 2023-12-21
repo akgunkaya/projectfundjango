@@ -1,13 +1,16 @@
-{% for organizationObject in organizations_with_admin_status %}
-  <a hx-get="{% url 'set_selected_organization' organizationObject.organization.id %}"
-    hx-target="#current-org"
-    hx-swap="outerHTML"
-    id="organization-item-{{ organizationObject.organization.id }}">
-      <li>{{ organizationObject.organization }}</li>
-  </a>
-  {% if organizationObject.is_owner %}
-    <button hx-post="{% url 'delete_organization' organizationObject.organization.id %}" hx-confirm="Are you sure?" hx-target="#organization-item-{{ organizationObject.organization.id }}" hx-swap="outerHTML">
-      Delete
-    </button>
-  {% endif %}
+{% for organization in organizations_with_role_status %}
+  <div id="organization-item-{{ organization.organization.id }}">
+    <div hx-get="{% url 'set_selected_organization' organization.organization.id %}"
+      hx-target="#current-org"
+      hx-swap="outerHTML"      
+    >
+        <li>{{ organization.organization }}</li>
+    </div>
+    {% if organization.role == "OWNER" %}
+      <span>You own this organization</span>
+      <button hx-post="{% url 'delete_organization' organization.organization.id %}" hx-confirm="Are you sure?" hx-target="#organization-item-{{ organization.organization.id }}" hx-swap="outerHTML">
+        Delete
+      </button>
+    {% endif %}
+  </div>
 {% endfor %}

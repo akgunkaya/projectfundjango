@@ -5,18 +5,22 @@ import uuid
 
 class Organization(models.Model):
     name = models.CharField(max_length=100)
-    users = models.ManyToManyField(User)
 
     def __str__(self):
         return self.name
     
 class OrganizationMember(models.Model):
+    ROLE_CHOICES = [
+        ('OWNER', 'Owner'),
+        ('ADMIN', 'Admin'),
+        ('MEMBER', 'Member'),        
+    ]    
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    is_owner = models.BooleanField(default=False)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
     def __str__(self):
-        admin_status = "Admin" if self.is_owner else "Member"
+        admin_status = "Admin" if self.role == 'ADMIN' else "Member"
         return f"{self.user.username} - {admin_status} of {self.organization.name}"
 
 class OrganizationInvitation(models.Model):
