@@ -47,7 +47,6 @@ def user_logout(request):
     return redirect('/login')
 
 @login_required
-# TODO add functionality so that user can transfer ownership of tasks and assign to other users 
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
@@ -59,10 +58,24 @@ def tasks(request):
         tasks = Task.objects.filter(organization=selected_organization)
     else:
         tasks = Task.objects.none()  # No tasks if no organization is selected
+
+    organization_instance = selected_organization  # Replace 'organization_id' with the actual ID
+
+    # Get all organization members for the given organization
+    organization_members = OrganizationMember.objects.filter(organization=organization_instance)
+
+    # Initialize an empty list for users
+    users = []
+
+    # Append each member's user to the users list
+    for member in organization_members:
+        users.append(member.user)  # Adding each user to the list
     error = None
 
     for task in tasks:
-        task.is_owner = (task.owner == current_user)        
+        task.is_owner = (task.owner == current_user)    
+        task.users = users            
+    
 
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
@@ -92,6 +105,18 @@ def delete_task(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
     task.delete()
     return HttpResponse('') 
+
+@login_required
+def transfer_task_owner(request, task_id):
+    if request.method =='POST':
+        task = get_object_or_404(Task, pk=task_id)
+        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
+        task.owner = selected_user  
+        task.save()      
+        print(selected_user)
+    return render(request,'tasks/partials/owner.html', {'owner':task.owner})
+
+# TODO add functionality for assign user to task
 
 @login_required
 def organizations(request):
