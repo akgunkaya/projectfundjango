@@ -16,6 +16,7 @@ def index(request):
 
 # signup page
 def user_signup(request):
+    akgun = 'this is it'
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -46,12 +47,12 @@ def user_logout(request):
     return redirect('/login')
 
 @login_required
-# TODO add owner to the task, only the owner can delete the task.
+# TODO add functionality so that user can transfer ownership of tasks and assign to other users 
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
     user_profile = UserProfile.objects.get(user=current_user)
-    selected_organization = user_profile.selected_organization
+    selected_organization = user_profile.selected_organization    
 
     # Filter tasks for the selected organization only
     if selected_organization:
@@ -60,12 +61,17 @@ def tasks(request):
         tasks = Task.objects.none()  # No tasks if no organization is selected
     error = None
 
+    for task in tasks:
+        task.is_owner = (task.owner == current_user)        
+
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
             if selected_organization:
                 task.organization = selected_organization
+                task.owner = current_user
+                task.assigned_to = current_user
                 task.save()
                 if request.headers.get('HX-Request'):
                     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})

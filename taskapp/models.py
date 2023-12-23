@@ -28,7 +28,7 @@ class OrganizationInvitation(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     token = models.UUIDField(default=uuid.uuid4)
     is_accepted = models.BooleanField(default=False)
-    token_expiry = models.DateTimeField(null=True)
+    token_expiry = models.DateTimeField(null=True)    
     
 
 class Task(models.Model): 
@@ -42,7 +42,8 @@ class Task(models.Model):
     description = models.TextField()
     due_date = models.DateField()
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_tasks')
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_tasks')
     collaborators = models.ManyToManyField(User, related_name='task_collaborators', blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)

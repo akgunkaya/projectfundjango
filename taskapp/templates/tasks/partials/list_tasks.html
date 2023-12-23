@@ -1,9 +1,13 @@
 {% for task in tasks %}
   <div id="task-item-{{ task.id }}">
     <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>
-    <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#task-item-{{ task.id }}" hx-swap="outerHTML">
-      Delete
-    </button>
+    <div>Owner - {{task.owner}}</div>
+    <div>Assigned To - {{task.assigned_to}}</div>
+    {% if task.is_owner %}      
+      <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#task-item-{{ task.id }}" hx-swap="outerHTML">
+        Delete
+      </button>
+    {% endif %}
   </div> 
 {% endfor %}
 {% if error %}
