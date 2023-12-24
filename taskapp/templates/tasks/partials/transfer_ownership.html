@@ -1,4 +1,4 @@
-<select hx-post="{% url 'transfer_task_owner' task_id=task_id %}" hx-trigger="change" name="transfer_ownership" hx-target="#task-owner" id="transfer_ownership" hx-swap="outerHTML">
+<select hx-post="{% url 'transfer_task_owner' task_id=task_id %}" hx-trigger="change" name="transfer_ownership" hx-target="#list-container" id="transfer_ownership" hx-swap="outerHTML">
   <option value="" disabled selected>Select User</option>
   {% for user in users %}
       <option value="{{ user}}">

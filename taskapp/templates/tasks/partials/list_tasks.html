@@ -1,16 +1,20 @@
-{% for task in tasks %}
-  <div id="task-item-{{ task.id }}">
-    <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>    
-    {% include "tasks/partials/owner.html" with owner=task.owner%}
-    {% include "tasks/partials/transfer_ownership.html" with users=task.users task_id=task.id%}
-    <div>Assigned To - {{task.assigned_to}}</div>
-    {% if task.is_owner %}      
-      <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#task-item-{{ task.id }}" hx-swap="outerHTML">
-        Delete
-      </button>
-    {% endif %}
-  </div> 
-{% endfor %}
-{% if error %}
-  <p>{{ error }}</p>  
-{% endif %}   
+<div id="list-container">
+  {% for task in tasks %}
+    <div id="task-item-{{ task.id }}">
+      <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>    
+      {% include "tasks/partials/owner.html" with owner=task.owner%}
+      {% if task.is_owner %}      
+        {% include "tasks/partials/transfer_ownership.html" with users=task.users task_id=task.id%}
+      {% endif %}
+      <div>Assigned To - {{task.assigned_to}}</div>
+      {% if task.is_owner %}      
+        <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#list-container" hx-swap="outerHTML">
+          Delete
+        </button> 
+      {% endif %}
+    </div> 
+  {% endfor %}
+  {% if error %}
+    <p>{{ error }}</p>  
+  {% endif %}   
+</div>

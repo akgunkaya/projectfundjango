@@ -8,6 +8,10 @@ from .models import Task, Organization, UserProfile, OrganizationMember
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
+from django.contrib import messages
+from .helpers import get_tasks_for_organization, set_task_ownership_attributes
+
+
 
 # Create your views here.
 # Home page
@@ -16,7 +20,6 @@ def index(request):
 
 # signup page
 def user_signup(request):
-    akgun = 'this is it'
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -51,32 +54,13 @@ def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
     user_profile = UserProfile.objects.get(user=current_user)
-    selected_organization = user_profile.selected_organization    
+    selected_organization = user_profile.selected_organization
 
-    # Filter tasks for the selected organization only
-    if selected_organization:
-        tasks = Task.objects.filter(organization=selected_organization)
-    else:
-        tasks = Task.objects.none()  # No tasks if no organization is selected
+    tasks = get_tasks_for_organization(selected_organization)
+    set_task_ownership_attributes(tasks, current_user)
 
-    organization_instance = selected_organization  # Replace 'organization_id' with the actual ID
-
-    # Get all organization members for the given organization
-    organization_members = OrganizationMember.objects.filter(organization=organization_instance)
-
-    # Initialize an empty list for users
-    users = []
-
-    # Append each member's user to the users list
-    for member in organization_members:
-        users.append(member.user)  # Adding each user to the list
-    error = None
-
-    for task in tasks:
-        task.is_owner = (task.owner == current_user)    
-        task.users = users            
+    error = None        
     
-
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid():
@@ -84,8 +68,11 @@ def tasks(request):
             if selected_organization:
                 task.organization = selected_organization
                 task.owner = current_user
-                task.assigned_to = current_user
+                task.assigned_to = current_user         
                 task.save()
+                tasks = get_tasks_for_organization(selected_organization)
+                set_task_ownership_attributes(tasks, current_user)    
+                print(tasks)
                 if request.headers.get('HX-Request'):
                     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
                 else:
@@ -95,29 +82,44 @@ def tasks(request):
         else:
             error = "Oops, something went wrong."
 
-    if request.headers.get('HX-Request'):
-        return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
-
-    return render(request, 'tasks/tasks.html', {'form': form, 'tasks': tasks, 'error': error})
+    context = {'form': form, 'tasks': tasks, 'error': error}
+    template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
+    return render(request, template, context)
 
 @login_required
 def delete_task(request, task_id):
     task = get_object_or_404(Task, pk=task_id)
-    task.delete()
-    return HttpResponse('') 
+    tasks = get_tasks_for_organization(task.organization)
+    
+    if request.method =='POST':
+        if task.owner != request.user:
+            error = "You are not authorized to delete this task."
+        else:
+            task.delete()
+            error = "Task deleted successfully."
+       
+    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
+    
 
 @login_required
 def transfer_task_owner(request, task_id):
-    if request.method =='POST':
-        task = get_object_or_404(Task, pk=task_id)
+    current_user = request.user
+    task = get_object_or_404(Task, pk=task_id)    
+
+    if task.owner != request.user:
+        error = "You are not authorized to transfer this task."
+    else:
+        error = "Task transfered successfully."        
         selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
+        print(selected_user)
         task.owner = selected_user  
         task.save()      
-        print(selected_user)
-    return render(request,'tasks/partials/owner.html', {'owner':task.owner})
+        tasks = get_tasks_for_organization(task.organization)
+        set_task_ownership_attributes(tasks, current_user)          
+      
+    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error':error})        
 
 # TODO add functionality for assign user to task
-
 @login_required
 def organizations(request):
     current_user = request.user
@@ -173,8 +175,7 @@ def organizations(request):
     })
 
 @login_required
-def delete_organization(request, organization_id):
-    print(organization_id)
+def delete_organization(request, organization_id):    
     organization = get_object_or_404(Organization, pk=organization_id)
     current_user = request.user
     member = OrganizationMember.objects.filter(user=current_user, organization=organization, role='OWNER').first()
