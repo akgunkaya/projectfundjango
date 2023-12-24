@@ -1,13 +1,29 @@
 <div id="list-container">
   {% for task in tasks %}
     <div id="task-item-{{ task.id }}">
-      <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li>    
-      {% include "tasks/partials/owner.html" with owner=task.owner%}
-      {% if task.is_owner %}      
-        {% include "tasks/partials/transfer_ownership.html" with users=task.users task_id=task.id%}
-      {% endif %}
-      <div>Assigned To - {{task.assigned_to}}</div>
-      {% if task.is_owner %}      
+      <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li> 
+      <div>Owner - {{task.owner}}</div>                     
+      <div>Assigned To - {{task.assigned_to}}</div> 
+      {% if task.is_owner %} 
+        <h4>Transfer ownership</h4>     
+        <select hx-post="{% url 'transfer_task_owner' task_id=task.id %}" hx-trigger="change" name="transfer_ownership" hx-target="#list-container" id="transfer_ownership" hx-swap="outerHTML">
+          <option value="" disabled selected>Select User</option>
+          {% for user in task.users %}
+              <option value="{{ user}}">
+                  {{ user.get_full_name|default:user.username }}
+              </option>
+          {% endfor %}
+        </select>     
+        <h4>Assign task to user</h4>     
+        <select hx-post="{% url 'assign_task_user' task_id=task.id %}" hx-trigger="change" name="assign_task" hx-target="#list-container" id="assign_task" hx-swap="outerHTML">
+          <option value="" disabled selected>Select User</option>
+          {% for user in task.users %}
+              <option value="{{ user}}">
+                  {{ user.get_full_name|default:user.username }}
+              </option>
+          {% endfor %}
+        </select> 
+        <h4>Delete Task</h4>         
         <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#list-container" hx-swap="outerHTML">
           Delete
         </button> 

@@ -124,7 +124,19 @@ def transfer_task_owner(request, task_id):
       
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error':error})        
 
-# TODO add functionality for assign user to task
+def assign_task_user(request, task_id):
+    current_user = request.user
+    task = get_object_or_404(Task, pk=task_id)    
+
+    error = "Task transfered successfully."        
+    selected_user = User.objects.get(username=request.POST.get('assign_task'))        
+    task.assigned_to = selected_user  
+    task.save()      
+    tasks = get_tasks_for_organization(task.organization)
+    set_task_ownership_attributes(tasks, current_user)          
+      
+    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error':error})       
+    
 @login_required
 def organizations(request):
     current_user = request.user
