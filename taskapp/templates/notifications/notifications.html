@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+
+<h1>Notifications</h1>
+{% for notification in notifications %}
+  <div id="notification-container-id-{{notification.id}}">
+    {{notification}}
+    {% if not notification.is_archived %}
+      <button  
+        hx-target="#notification-container-id-{{notification.id}}"
+        hx-post="{% url 'accept_notification' notification_id=notification.id %}" 
+        hx-trigger="click">
+        Confirm
+      </button>
+      <button  
+        hx-target="#notification-container-id-{{notification.id}}"
+        hx-post="{% url 'decline_notification' notification_id=notification.id %}" 
+        hx-trigger="click">
+        Decline
+      </button>      
+      {% else %}
+      <span>
+        *Archived notification*
+      </span>
+    {% endif %}
+  </div>
+{% endfor %}
+
+<!-- Error display -->
+{% if error %}
+    {{ error }} 
+{% endif %}
+
+{% endblock %}

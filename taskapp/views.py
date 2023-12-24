@@ -4,12 +4,12 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Organization, UserProfile, OrganizationMember
+from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
-from .helpers import get_tasks_for_organization, set_task_ownership_attributes
+from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks
 
 
 
@@ -52,18 +52,6 @@ def user_logout(request):
 def get_user_profile(current_user):    
     return UserProfile.objects.get(user=current_user)
 
-def create_task(form, user, organization):    
-    task = form.save(commit=False)
-    task.organization = organization
-    task.owner = user
-    task.assigned_to = user         
-    task.save()
-    return task
-
-def fetch_and_set_tasks(organization, user):    
-    tasks = get_tasks_for_organization(organization)
-    set_task_ownership_attributes(tasks, user)
-    return tasks
 
 @login_required
 def tasks(request):
@@ -106,37 +94,27 @@ def delete_task(request, task_id):
        
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
     
-
+# TODO When user has sent a change request they should be notified of updates of that change request
 @login_required
-def transfer_task_owner(request, task_id):
-    current_user = request.user
-    task = get_object_or_404(Task, pk=task_id)    
+def task_change_request(request, task_id):
+    task = get_object_or_404(Task, pk=task_id)  
+    selected_user = None
+    change_type = None
+    if request.POST.get('transfer_ownership'):
+        selected_user = User.objects.get(username=request.POST.get('transfer_ownership')) 
+        change_type = 'OWNER'       
+    elif request.POST.get('assign_task'):
+        selected_user = User.objects.get(username=request.POST.get('assign_task'))
+        change_type = 'ASSIGNED_TO' 
 
-    if task.owner != request.user:
-        error = "You are not authorized to transfer this task."
-    else:
-        error = "Task transfered successfully."        
-        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))        
-        task.owner = selected_user  
-        task.save()      
-        tasks = get_tasks_for_organization(task.organization)
-        set_task_ownership_attributes(tasks, current_user)          
-      
-    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error':error})        
+    TaskChangeRequest.objects.create(
+        task = task,
+        new_user = selected_user,
+        change_type = change_type
+    )
 
-def assign_task_user(request, task_id):
-    current_user = request.user
-    task = get_object_or_404(Task, pk=task_id)    
+    return HttpResponse('Change request created')
 
-    error = "Task transfered successfully."        
-    selected_user = User.objects.get(username=request.POST.get('assign_task'))        
-    task.assigned_to = selected_user  
-    task.save()      
-    tasks = get_tasks_for_organization(task.organization)
-    set_task_ownership_attributes(tasks, current_user)          
-      
-    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error':error})       
-    
 @login_required
 def organizations(request):
     current_user = request.user
@@ -212,6 +190,7 @@ def set_selected_organization(request, organization_id):
     return render(request, 'organizations/partials/current_org.html', {'organization': organization})
 
 @login_required
+# TODO the todo invitation should only show users are not the current user
 def invite_user(request):
     invite_response = None
     if request.method == 'POST':
@@ -311,4 +290,35 @@ def invite_auth(request):
 
     return render(request, 'invitations/invitations.html', {'form': form})
 
+@login_required
+def notifications(request):
+    current_user = request.user
+    notifications = TaskChangeRequest.objects.filter(new_user = current_user)
+    return render(request, 'notifications/notifications.html', {'notifications': notifications})  
+
+def accept_notification(request, notification_id):
+    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
+
+    task = change_request.task
+
+    if change_request.change_type == 'OWNER':
+        task.owner = change_request.new_user
+    elif change_request.change_type == 'ASSIGNED_TO':
+        task.assigned_to = change_request.new_user
+
+    task.save()
+    
+    change_request.task.save()
+    change_request.is_accepted = True
+    change_request.is_archived = True
+    change_request.save()
+
+    return HttpResponse('Change request accepted')
+
+def decline_notification(request, notification_id):
+    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)        
+    change_request.is_archived = True
+    change_request.save()
+
+    return HttpResponse('Change request declined')
 

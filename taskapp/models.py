@@ -52,6 +52,29 @@ class Task(models.Model):
     def __str__(self):
         return self.title
     
+class TaskChangeRequest(models.Model):
+    TASK_CHANGE_TYPE_CHOICES = [
+        ('OWNER', 'Owner Change'),
+        ('ASSIGNED_TO', 'Assigned To Change'),
+    ]
+
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
+    task_title = models.CharField(max_length=100, blank=True, null=True)  # New field to store the task title
+    new_user = models.ForeignKey(User, related_name='task_change_requests', on_delete=models.SET_NULL, null=True, blank=True)
+    change_type = models.CharField(max_length=20, choices=TASK_CHANGE_TYPE_CHOICES)
+    is_accepted = models.BooleanField(default=False)
+    is_archived = models.BooleanField(default=False)
+    request_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_change_type_display()} Request for {self.task_title}"    
+
+    def save(self, *args, **kwargs):
+        if self.task:
+            self.task_title = self.task.title
+        super().save(*args, **kwargs)
+
+    
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     selected_organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)    

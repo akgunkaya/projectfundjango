@@ -6,7 +6,7 @@
       <div>Assigned To - {{task.assigned_to}}</div> 
       {% if task.is_owner %} 
         <h4>Transfer ownership</h4>     
-        <select hx-post="{% url 'transfer_task_owner' task_id=task.id %}" hx-trigger="change" name="transfer_ownership" hx-target="#list-container" id="transfer_ownership" hx-swap="outerHTML">
+        <select hx-post="{% url 'task_change_request' task_id=task.id %}" hx-trigger="change" name="transfer_ownership" id="transfer_ownership" hx-swap="outerHTML">
           <option value="" disabled selected>Select User</option>
           {% for user in task.users %}
               <option value="{{ user}}">
@@ -15,7 +15,7 @@
           {% endfor %}
         </select>     
         <h4>Assign task to user</h4>     
-        <select hx-post="{% url 'assign_task_user' task_id=task.id %}" hx-trigger="change" name="assign_task" hx-target="#list-container" id="assign_task" hx-swap="outerHTML">
+        <select hx-post="{% url 'task_change_request' task_id=task.id %}" hx-trigger="change" name="assign_task" id="assign_task" hx-swap="outerHTML">
           <option value="" disabled selected>Select User</option>
           {% for user in task.users %}
               <option value="{{ user}}">
