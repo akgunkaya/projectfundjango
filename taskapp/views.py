@@ -49,53 +49,59 @@ def user_logout(request):
     logout(request)
     return redirect('/login')
 
+def get_user_profile(current_user):    
+    return UserProfile.objects.get(user=current_user)
+
+def create_task(form, user, organization):    
+    task = form.save(commit=False)
+    task.organization = organization
+    task.owner = user
+    task.assigned_to = user         
+    task.save()
+    return task
+
+def fetch_and_set_tasks(organization, user):    
+    tasks = get_tasks_for_organization(organization)
+    set_task_ownership_attributes(tasks, user)
+    return tasks
+
 @login_required
 def tasks(request):
     form = CreateTaskForm()
     current_user = request.user
-    user_profile = UserProfile.objects.get(user=current_user)
-    selected_organization = user_profile.selected_organization
+    user_profile = get_user_profile(current_user)
+    selected_organization = user_profile.selected_organization    
+    error = None
 
-    tasks = get_tasks_for_organization(selected_organization)
-    set_task_ownership_attributes(tasks, current_user)
-
-    error = None        
-    
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
-        if form.is_valid():
-            task = form.save(commit=False)
-            if selected_organization:
-                task.organization = selected_organization
-                task.owner = current_user
-                task.assigned_to = current_user         
-                task.save()
-                tasks = get_tasks_for_organization(selected_organization)
-                set_task_ownership_attributes(tasks, current_user)    
-                print(tasks)
-                if request.headers.get('HX-Request'):
-                    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
-                else:
-                    return redirect('tasks')
-            else:
-                error = "You must select an organization before creating tasks."
-        else:
-            error = "Oops, something went wrong."
+        if form.is_valid() and selected_organization:
+            create_task(form, current_user, selected_organization)
+            tasks = fetch_and_set_tasks(selected_organization, current_user)
+            if request.headers.get('HX-Request'):
+                return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
+            return redirect('tasks')
+        error = "You must select an organization before creating tasks." if not selected_organization else "Oops, something went wrong."
+
+    tasks = fetch_and_set_tasks(selected_organization, current_user) if selected_organization else []
 
     context = {'form': form, 'tasks': tasks, 'error': error}
     template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
     return render(request, template, context)
 
+
 @login_required
 def delete_task(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)
-    tasks = get_tasks_for_organization(task.organization)
-    
+    current_user = request.user
+    task = get_object_or_404(Task, pk=task_id)       
+
     if request.method =='POST':
         if task.owner != request.user:
             error = "You are not authorized to delete this task."
         else:
             task.delete()
+            tasks = get_tasks_for_organization(task.organization)
+            set_task_ownership_attributes(tasks, current_user)               
             error = "Task deleted successfully."
        
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
@@ -110,8 +116,7 @@ def transfer_task_owner(request, task_id):
         error = "You are not authorized to transfer this task."
     else:
         error = "Task transfered successfully."        
-        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
-        print(selected_user)
+        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))        
         task.owner = selected_user  
         task.save()      
         tasks = get_tasks_for_organization(task.organization)
