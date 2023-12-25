@@ -97,23 +97,37 @@ def delete_task(request, task_id):
 # TODO When user has sent a change request they should be notified of updates of that change request
 @login_required
 def task_change_request(request, task_id):
-    task = get_object_or_404(Task, pk=task_id)  
+    task = get_object_or_404(Task, pk=task_id)
     selected_user = None
     change_type = None
+
+    # Extract the relevant data from the request
     if request.POST.get('transfer_ownership'):
-        selected_user = User.objects.get(username=request.POST.get('transfer_ownership')) 
-        change_type = 'OWNER'       
+        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
+        change_type = 'OWNER'
     elif request.POST.get('assign_task'):
         selected_user = User.objects.get(username=request.POST.get('assign_task'))
-        change_type = 'ASSIGNED_TO' 
+        change_type = 'ASSIGNED_TO'
 
-    TaskChangeRequest.objects.create(
-        task = task,
-        new_user = selected_user,
-        change_type = change_type
+    # Check if a similar change request already exists
+    existing_request = TaskChangeRequest.objects.filter(
+        task=task,
+        new_user=selected_user,
+        change_type=change_type
     )
 
-    return HttpResponse('Change request created')
+    if not existing_request.exists():
+        # Create the change request only if it doesn't already exist
+        TaskChangeRequest.objects.create(
+            task=task,
+            new_user=selected_user,
+            change_type=change_type
+        )
+        message = 'Change request created'
+    else:
+        message = 'Change request already exists'
+
+    return HttpResponse(message)
 
 @login_required
 def organizations(request):

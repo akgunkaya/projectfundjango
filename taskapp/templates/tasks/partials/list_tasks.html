@@ -22,7 +22,15 @@
                   {{ user.get_full_name|default:user.username }}
               </option>
           {% endfor %}
-        </select> 
+        </select>  
+        <h4>Change Requests</h4>          
+        {% for change_request in task.change_requests  %}
+          {% if change_request.is_archived is not True %}          
+            <p>
+              {{change_request}}                      
+            </p>            
+          {% endif %}
+        {% endfor %}
         <h4>Delete Task</h4>         
         <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#list-container" hx-swap="outerHTML">
           Delete

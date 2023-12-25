@@ -1,4 +1,4 @@
-from .models import Task, OrganizationMember
+from .models import Task, OrganizationMember, TaskChangeRequest
 
 
 def get_tasks_for_organization(organization):
@@ -18,6 +18,7 @@ def set_task_ownership_attributes(tasks, current_user):
     for task in tasks:
         task.is_owner = (task.owner == current_user)
         task.users = get_users_from_organization_members(task.organization, current_user)
+        task.change_requests = TaskChangeRequest.objects.filter(task=task)
 
 def create_task(form, user, organization):    
     task = form.save(commit=False)
