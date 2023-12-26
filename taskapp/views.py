@@ -11,7 +11,9 @@ from datetime import timedelta
 from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks
 
-
+# TODO add functionality to transfer ownership of an organization
+# TODO add functionality to notify about ownership of an organization
+# TODO add functionality so that the web socket message changes depending on type of message
 
 # Create your views here.
 # Home page

@@ -51,6 +51,42 @@
         document.body.addEventListener('htmx:configRequest', (event) => {
         event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     })
-    </script>    
+    </script>  
+    
+    {% block js_script %}
+    <script>
+        // setup chat scoket
+        const notifyScoket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/notify/'
+        );
+    
+        // on socket open
+        notifyScoket.onopen = function (e) {
+            console.log('Socket successfully connected.');
+        };
+    
+        // on socket close
+        notifyScoket.onclose = function (e) {
+            console.log('Socket closed unexpectedly');
+        };
+    
+        // on receiving message on group
+        notifyScoket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+            // Call the setMessage function to add the new li element
+            setMessage(message);
+    
+        };
+    
+        function setMessage(message) {
+            alert("You have just been assigned a new task '" + message + "' check the notifications tab to confirm")
+        }
+    
+    
+    </script>
+    {% endblock %}    
 </body>
 </html>
