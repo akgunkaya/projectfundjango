@@ -16,5 +16,5 @@ urlpatterns = [
     path('organizations/invite-auth/', views.invite_auth, name='invite_auth'),
     path('notifications/', views.notifications, name='notifications'),
     path('notifications/accept/<int:notification_id>/', views.accept_notification, name='accept_notification'),
-    path('notifications/decline/<int:notification_id>/', views.decline_notification, name='decline_notification'),
+    path('notifications/decline/', views.decline_notification, name='decline_notification'),
 ]

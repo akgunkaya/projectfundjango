@@ -54,8 +54,8 @@ class Task(models.Model):
     
 class TaskChangeRequest(models.Model):
     TASK_CHANGE_TYPE_CHOICES = [
-        ('OWNER', 'Owner Change'),
-        ('ASSIGNED_TO', 'Assigned To Change'),
+        ('OWNER', 'owner'),
+        ('ASSIGNED_TO', 'assigned'),
     ]
 
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
@@ -67,7 +67,8 @@ class TaskChangeRequest(models.Model):
     request_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.get_change_type_display()} Request for {self.task_title}"    
+        new_user_name = self.new_user.get_full_name() or self.new_user.username
+        return f"Request to {new_user_name} has been sent to change {self.get_change_type_display()} status"  
 
     def save(self, *args, **kwargs):
         if self.task:

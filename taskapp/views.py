@@ -96,10 +96,11 @@ def delete_task(request, task_id):
        
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
     
-# TODO When user has sent a change request they should be notified of updates of that change request
 @login_required
 def task_change_request(request, task_id):
+    current_user = request.user
     task = get_object_or_404(Task, pk=task_id)
+    tasks = fetch_and_set_tasks(task.organization, current_user)
     selected_user = None
     change_type = None
 
@@ -125,11 +126,12 @@ def task_change_request(request, task_id):
             new_user=selected_user,
             change_type=change_type
         )
-        message = 'Change request created'
+        error = 'Change request created'
     else:
-        message = 'Change request already exists'
+        error = 'Change request already exists'
 
-    return HttpResponse(message)
+    print(tasks)
+    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
 
 @login_required
 def organizations(request):
@@ -206,7 +208,6 @@ def set_selected_organization(request, organization_id):
     return render(request, 'organizations/partials/current_org.html', {'organization': organization})
 
 @login_required
-# TODO the todo invitation should only show users are not the current user
 def invite_user(request):
     invite_response = None
     if request.method == 'POST':
@@ -331,10 +332,7 @@ def accept_notification(request, notification_id):
 
     return HttpResponse('Change request accepted')
 
-def decline_notification(request, notification_id):
-    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)        
-    change_request.is_archived = True
-    change_request.save()
-
+# TODO Add functionality so that a decline reason is added on the model and this is notified to the original user who requested
+def decline_notification(request):        
     return HttpResponse('Change request declined')
 

@@ -16,7 +16,7 @@
       </button>
       <button  
         hx-target="#notification-container-id-{{notification.id}}"
-        hx-post="{% url 'decline_notification' notification_id=notification.id %}" 
+        hx-post="{% url 'decline_notification' %}" 
         hx-trigger="click">
         Decline
       </button>      
