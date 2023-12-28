@@ -14,12 +14,14 @@
         hx-trigger="click">
         Confirm
       </button>
-      <button  
-        hx-target="#notification-container-id-{{notification.id}}"
-        hx-post="{% url 'decline_notification' %}" 
-        hx-trigger="click">
-        Decline
-      </button>      
+      <form 
+        method="post" 
+        hx-target="#notification-container-id-{{notification.id}}" 
+        hx-post="{% url 'decline_notification' notification_id=notification.id %}">
+        {% csrf_token %}
+        <textarea name="decline_reason" placeholder="Enter reason for declining"></textarea>
+        <button type="submit">Decline</button>
+      </form>    
       {% else %}
       <span>
         *Archived notification*

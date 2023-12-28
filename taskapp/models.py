@@ -82,3 +82,14 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return self.user.username   
+    
+class TaskHistory(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    changed_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    change_type = models.CharField(max_length=50)
+    change_date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Task {self.task.title} - {self.change_type} on {self.change_date}"
+

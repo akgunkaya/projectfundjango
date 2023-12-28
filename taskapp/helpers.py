@@ -1,5 +1,4 @@
-from .models import Task, OrganizationMember, TaskChangeRequest
-
+from .models import Task, OrganizationMember, TaskChangeRequest, TaskHistory
 
 def get_tasks_for_organization(organization):
     if organization:
@@ -27,6 +26,14 @@ def create_task(form, user, organization):
     task.assigned_to = user         
     task.save()
     return task
+
+def create_task_history(task, changed_by, change_type, notes):
+    TaskHistory.objects.create(
+        task=task,
+        changed_by=changed_by,
+        change_type=change_type,
+        notes=notes if notes else None
+    )
 
 def fetch_and_set_tasks(organization, user):    
     tasks = get_tasks_for_organization(organization)

@@ -4,12 +4,12 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest
+from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
-from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks
+from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
 # TODO add functionality to transfer ownership of an organization
 # TODO add functionality to notify about ownership of an organization
@@ -66,7 +66,8 @@ def tasks(request):
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid() and selected_organization:
-            create_task(form, current_user, selected_organization)
+            task = create_task(form, current_user, selected_organization)
+            create_task_history(task, current_user, "TASK_CREATED", '' )
             tasks = fetch_and_set_tasks(selected_organization, current_user)
             if request.headers.get('HX-Request'):
                 return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
@@ -98,6 +99,7 @@ def delete_task(request, task_id):
     
 @login_required
 def task_change_request(request, task_id):
+    # TODO when creating task history ensure that in the notes it clearly states who is transfering from where to whom
     current_user = request.user
     task = get_object_or_404(Task, pk=task_id)
     tasks = fetch_and_set_tasks(task.organization, current_user)
@@ -112,6 +114,8 @@ def task_change_request(request, task_id):
         selected_user = User.objects.get(username=request.POST.get('assign_task'))
         change_type = 'ASSIGNED_TO'
 
+    
+    create_task_history(task, selected_user, change_type, '' )
     # Check if a similar change request already exists
     existing_request = TaskChangeRequest.objects.filter(
         task=task,
@@ -129,8 +133,7 @@ def task_change_request(request, task_id):
         error = 'Change request created'
     else:
         error = 'Change request already exists'
-
-    print(tasks)
+    
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
 
 @login_required
@@ -332,7 +335,18 @@ def accept_notification(request, notification_id):
 
     return HttpResponse('Change request accepted')
 
-# TODO Add functionality so that a decline reason is added on the model and this is notified to the original user who requested
-def decline_notification(request):        
+# TODO Add functionality so that is sent to the users notifications and notifies them live
+def decline_notification(request, notification_id):
+    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
+    user = change_request.new_user
+    task = change_request.task
+    reason = request.POST.get('decline_reason')  
+
+    if change_request.change_type == 'OWNER':
+        history_type = "OWNER_REQUEST_DECLINED"
+    elif change_request.change_type == 'ASSIGNED_TO':
+        history_type = "ASSIGN_TO_REQUEST_DECLINED"
+
+    create_task_history(task, user, history_type, reason)
     return HttpResponse('Change request declined')
 
