@@ -318,7 +318,6 @@ def notifications(request):
 
 def accept_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
-
     task = change_request.task
 
     if change_request.change_type == 'OWNER':
@@ -338,6 +337,7 @@ def accept_notification(request, notification_id):
 # TODO Add functionality so that is sent to the users notifications and notifies them live
 def decline_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
+
     user = change_request.new_user
     task = change_request.task
     reason = request.POST.get('decline_reason')  
@@ -346,6 +346,9 @@ def decline_notification(request, notification_id):
         history_type = "OWNER_REQUEST_DECLINED"
     elif change_request.change_type == 'ASSIGNED_TO':
         history_type = "ASSIGN_TO_REQUEST_DECLINED"
+
+    change_request.is_archived = True
+    change_request.save()        
 
     create_task_history(task, user, history_type, reason)
     return HttpResponse('Change request declined')
