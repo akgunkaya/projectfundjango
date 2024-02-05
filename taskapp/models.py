@@ -59,7 +59,8 @@ class TaskChangeRequest(models.Model):
     ]
 
     task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
-    task_title = models.CharField(max_length=100, blank=True, null=True)  # New field to store the task title
+    task_title = models.CharField(max_length=100, blank=True, null=True) 
+    current_user = models.ForeignKey(User, related_name='task_change_requests_current_user', on_delete=models.SET_NULL, null=True, blank=True)
     new_user = models.ForeignKey(User, related_name='task_change_requests', on_delete=models.SET_NULL, null=True, blank=True)
     change_type = models.CharField(max_length=20, choices=TASK_CHANGE_TYPE_CHOICES)
     is_accepted = models.BooleanField(default=False)
@@ -78,6 +79,7 @@ class TaskChangeRequest(models.Model):
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)    
     message = models.CharField(max_length=255)
+    related_id = models.IntegerField(null=True)
     is_archived = models.BooleanField(default=False)
 
     def __str__(self):

@@ -122,14 +122,16 @@ def task_change_request(request, task_id):
     # Check if a similar change request already exists
     existing_request = TaskChangeRequest.objects.filter(
         task=task,
+        current_user = current_user,
         new_user=selected_user,
         change_type=change_type
     )
 
     if not existing_request.exists():
         # Create the change request only if it doesn't already exist
-        TaskChangeRequest.objects.create(
+        existing_request = TaskChangeRequest.objects.create(
             task=task,
+            current_user = current_user,
             new_user=selected_user,
             change_type=change_type
         )
@@ -139,6 +141,7 @@ def task_change_request(request, task_id):
     
     Notification.objects.create(
         user=selected_user,
+        related_id = existing_request.id,
         message = changeMessage        
     )
     
@@ -327,26 +330,39 @@ def notifications(request):
 @login_required
 def accept_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
+    notification = get_object_or_404(Notification, related_id=notification_id)    
     task = change_request.task
+    message = None
 
     if change_request.change_type == 'OWNER':
         task.owner = change_request.new_user
+        message = f'User {change_request.new_user} has Accepted Ownership of Task ID: {change_request.task.id}'
     elif change_request.change_type == 'ASSIGNED_TO':
         task.assigned_to = change_request.new_user
+        message = f'User {change_request.new_user} has Accepted Assignment of Task ID: {change_request.task.id}'
 
     task.save()
     
     change_request.task.save()
     change_request.is_accepted = True
     change_request.is_archived = True
+    notification.is_archived = True
     change_request.save()
+    notification.save()
+
+    Notification.objects.create(
+        user=change_request.current_user,  
+        related_id = change_request.task.id,
+        message = message
+    )    
 
     return HttpResponse('Change request accepted')
 
-# TODO Add functionality so that is sent to the users notifications and notifies them live
+# TODO Remove the accept or decline request when user gets accept or decline confirmation
 @login_required
 def decline_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
+    notification = get_object_or_404(Notification, related_id=notification_id)    
 
     user = change_request.new_user
     task = change_request.task
@@ -354,11 +370,21 @@ def decline_notification(request, notification_id):
 
     if change_request.change_type == 'OWNER':
         history_type = "OWNER_REQUEST_DECLINED"
+        message = f'User {change_request.new_user} has Declined Ownership of Task ID: {change_request.task.id}'
     elif change_request.change_type == 'ASSIGNED_TO':
         history_type = "ASSIGN_TO_REQUEST_DECLINED"
+        message = f'User {change_request.new_user} has Declined Assignment of Task ID: {change_request.task.id}'
 
     change_request.is_archived = True
+    notification.is_archived = True
     change_request.save()        
+    notification.save()
+
+    Notification.objects.create(
+        user=change_request.current_user,    
+        related_id = change_request.task.id,            
+        message = message
+    )       
 
     create_task_history(task, user, history_type, reason)
     return HttpResponse('Change request declined')
