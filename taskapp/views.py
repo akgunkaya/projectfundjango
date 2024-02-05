@@ -4,7 +4,7 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory
+from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory, Notification
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
@@ -12,6 +12,7 @@ from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
 # TODO add functionality so that all notifications changes are live broadcast to users
+# TODO BUG so that multiple notifications are not added for change request before other user has a chance to accept or decline
 
 # Create your views here.
 # Home page
@@ -44,14 +45,14 @@ def user_login(request):
         form = LoginForm()
     return render(request, 'auth/login.html', {'form': form})
 
-# logout page
-def user_logout(request):
-    logout(request)
-    return redirect('/login')
-
 def get_user_profile(current_user):    
     return UserProfile.objects.get(user=current_user)
 
+# logout page
+@login_required
+def user_logout(request):
+    logout(request)
+    return redirect('/login')
 
 @login_required
 def tasks(request):
@@ -103,14 +104,18 @@ def task_change_request(request, task_id):
     tasks = fetch_and_set_tasks(task.organization, current_user)
     selected_user = None
     change_type = None
+    changeMessage = None
 
     # Extract the relevant data from the request
     if request.POST.get('transfer_ownership'):
         selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
         change_type = 'OWNER'
+        changeMessage = f'{current_user} is requesting to transfer Task ID:{task_id} to you.'
+
     elif request.POST.get('assign_task'):
         selected_user = User.objects.get(username=request.POST.get('assign_task'))
         change_type = 'ASSIGNED_TO'
+        changeMessage = f'{current_user} is requesting to assign Task ID:{task_id} to you.'        
 
     
     create_task_history(task, selected_user, change_type, '' )
@@ -131,6 +136,11 @@ def task_change_request(request, task_id):
         error = 'Change request created'
     else:
         error = 'Change request already exists'
+    
+    Notification.objects.create(
+        user=selected_user,
+        message = changeMessage        
+    )
     
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
 
@@ -311,9 +321,10 @@ def invite_auth(request):
 @login_required
 def notifications(request):
     current_user = request.user
-    notifications = TaskChangeRequest.objects.filter(new_user = current_user)
+    notifications = Notification.objects.filter(user = current_user)
     return render(request, 'notifications/notifications.html', {'notifications': notifications})  
 
+@login_required
 def accept_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
     task = change_request.task
@@ -333,6 +344,7 @@ def accept_notification(request, notification_id):
     return HttpResponse('Change request accepted')
 
 # TODO Add functionality so that is sent to the users notifications and notifies them live
+@login_required
 def decline_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
 

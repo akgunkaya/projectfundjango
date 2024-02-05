@@ -68,12 +68,20 @@ class TaskChangeRequest(models.Model):
 
     def __str__(self):
         new_user_name = self.new_user.get_full_name() or self.new_user.username
-        return f"Request to {new_user_name} has been sent to change {self.get_change_type_display()} status"  
+        return f"Request to {new_user_name} has been sent to change {self.get_change_type_display()} status"      
 
     def save(self, *args, **kwargs):
         if self.task:
             self.task_title = self.task.title
         super().save(*args, **kwargs)
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)    
+    message = models.CharField(max_length=255)
+    is_archived = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.message
 
     
 class UserProfile(models.Model):
