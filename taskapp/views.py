@@ -12,7 +12,9 @@ from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
 # TODO add functionality so that all notifications changes are live broadcast to users
-# TODO BUG so that multiple notifications are not added for change request before other user has a chance to accept or decline
+# BUG so that multiple notifications are not added for change request before other user has a chance to accept or decline
+# BUG Currently if another user is assigned to task the selet still shows the users name and does not give proper error if you click it
+
 
 # Create your views here.
 # Home page
@@ -62,6 +64,8 @@ def tasks(request):
     selected_organization = user_profile.selected_organization    
     error = None
 
+    organization_members = OrganizationMember.objects.filter(organization=selected_organization)
+
     if request.method == 'POST':
         form = CreateTaskForm(request.POST)
         if form.is_valid() and selected_organization:
@@ -75,7 +79,7 @@ def tasks(request):
 
     tasks = fetch_and_set_tasks(selected_organization, current_user) if selected_organization else []
 
-    context = {'form': form, 'tasks': tasks, 'error': error}
+    context = {'form': form, 'tasks': tasks, 'error': error, 'organization_members': organization_members}
     template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
     return render(request, template, context)
 
@@ -97,8 +101,7 @@ def delete_task(request, task_id):
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
     
 @login_required
-def task_change_request(request, task_id):
-    # TODO when creating task history ensure that in the notes it clearly states who is transfering from where to whom
+def task_change_request(request, task_id):    
     current_user = request.user
     task = get_object_or_404(Task, pk=task_id)
     tasks = fetch_and_set_tasks(task.organization, current_user)
@@ -133,7 +136,7 @@ def task_change_request(request, task_id):
             task=task,
             current_user = current_user,
             new_user=selected_user,
-            change_type=change_type
+            change_type=change_type,            
         )
         error = 'Change request created'
     else:
@@ -142,7 +145,8 @@ def task_change_request(request, task_id):
     Notification.objects.create(
         user=selected_user,
         related_id = existing_request.id,
-        message = changeMessage        
+        message = changeMessage,
+        allow_confirm = True
     )
     
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
@@ -243,10 +247,7 @@ def invite_user(request):
             except User.DoesNotExist:
                 # If user does not exist, do not alert the inviter
                 pass
-            else:
-                # Send email with invitation token
-                # TODO *Nice to have* Send actual email with an email backend setup currently its just using a dummy email backend
-                # TODO *Nice to have* of having the user copy and paste the token they should have it ready maybe it can be passed via the url
+            else:                
                 send_mail(
                     subject="Organization Invitation",
                     message=f"You have been invited to join an organization. Please use the following token: {invitation.token} folow this link http://127.0.0.1:8000/organizations/invite-auth/",
@@ -353,12 +354,12 @@ def accept_notification(request, notification_id):
     Notification.objects.create(
         user=change_request.current_user,  
         related_id = change_request.task.id,
-        message = message
+        message = message,
+        allow_confirm = False
     )    
 
     return HttpResponse('Change request accepted')
 
-# TODO Remove the accept or decline request when user gets accept or decline confirmation
 @login_required
 def decline_notification(request, notification_id):
     change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
@@ -383,7 +384,8 @@ def decline_notification(request, notification_id):
     Notification.objects.create(
         user=change_request.current_user,    
         related_id = change_request.task.id,            
-        message = message
+        message = message,
+        allow_confirm = False
     )       
 
     create_task_history(task, user, history_type, reason)

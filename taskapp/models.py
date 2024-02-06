@@ -81,6 +81,7 @@ class Notification(models.Model):
     message = models.CharField(max_length=255)
     related_id = models.IntegerField(null=True)
     is_archived = models.BooleanField(default=False)
+    allow_confirm = models.BooleanField(default=False)
 
     def __str__(self):
         return self.message

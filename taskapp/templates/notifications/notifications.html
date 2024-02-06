@@ -7,7 +7,7 @@
 {% for notification in notifications %}
   <div id="notification-container-id-{{notification.related_id}}">
     {{notification}}
-    {% if not notification.is_archived %}
+    {% if not notification.is_archived and notification.allow_confirm %}
       <button  
         hx-target="#notification-container-id-{{notification.related_id}}"
         hx-post="{% url 'accept_notification' notification_id=notification.related_id %}" 
@@ -21,8 +21,10 @@
         {% csrf_token %}
         <textarea name="decline_reason" placeholder="Enter reason for declining"></textarea>
         <button type="submit">Decline</button>
-      </form>    
-      {% else %}
+      </form>  
+    {% elif not notification.is_archived and not notification.allow_confirm %}
+
+    {% else %}
       <span>
         *Archived notification*
       </span>
