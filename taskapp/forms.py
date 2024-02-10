@@ -1,7 +1,7 @@
 from django import forms 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Task, Organization, OrganizationInvitation, OrganizationMember
+from .models import Task, Organization, OrganizationInvitation, OrganizationMember, Project
 
 class SignupForm(UserCreationForm):
     class Meta:
@@ -40,7 +40,6 @@ class InviteUserForm(forms.ModelForm):
                 user=user, role='OWNER').values_list('organization', flat=True)
             self.fields['organization'].queryset = Organization.objects.filter(id__in=owned_organizations)
 
-
 class TokenAuthForm(forms.ModelForm):
     class Meta:
         model = OrganizationInvitation
@@ -50,3 +49,7 @@ class TokenAuthForm(forms.ModelForm):
         super(TokenAuthForm, self).__init__(*args, **kwargs)
         self.initial['token'] = ''
 
+class CreateProjectForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['name', 'organization', 'collaborators']

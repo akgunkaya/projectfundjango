@@ -9,6 +9,15 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
     
+class Project(models.Model):
+    name = models.CharField(max_length=100)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='organization_project')
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_projects')
+    collaborators = models.ManyToManyField(User, related_name='project_collaborators')
+
+    def __str__(self):
+        return self.name
+    
 class OrganizationMember(models.Model):
     ROLE_CHOICES = [
         ('OWNER', 'Owner'),

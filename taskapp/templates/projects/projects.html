@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+{% include "projects/partials/project_form.html" with form=form %}
+
+<div id="projects-response">
+  {% include "projects/partials/list_projects.html" with projects=projects %}
+</div>
+
+<!-- Error display -->
+{% if error %}
+    {{ error }} 
+{% endif %}
+
+{% endblock %}

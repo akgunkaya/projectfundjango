@@ -1,19 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout 
-from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm, InviteUserForm, TokenAuthForm, OrganizationInvitation
+from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizationForm, InviteUserForm, TokenAuthForm, OrganizationInvitation, CreateProjectForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory, Notification
+from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory, Notification, Project
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
-# TODO add functionality so that all notifications changes are live broadcast to users
-# BUG so that multiple notifications are not added for change request before other user has a chance to accept or decline
-# BUG Currently if another user is assigned to task the selet still shows the users name and does not give proper error if you click it
+#TODO Create functionality for creating a Project it should have a name a foreignkey organization an owner
 
 
 # Create your views here.
@@ -83,7 +81,6 @@ def tasks(request):
     template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
     return render(request, template, context)
 
-
 @login_required
 def delete_task(request, task_id):
     current_user = request.user
@@ -150,6 +147,30 @@ def task_change_request(request, task_id):
     )
     
     return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
+
+@login_required
+def projects(request):
+    form = CreateProjectForm
+    current_user = request.user
+    user_profile = get_user_profile(current_user)
+    selected_organization = user_profile.selected_organization    
+    
+    projects = Project.objects.filter(organization=selected_organization)
+
+    if request.method == 'POST':
+        form = CreateProjectForm(request.POST)        
+        if form.is_valid():
+            form.save() 
+            task = form.save(commit=False)
+            task.owner = current_user            
+            task.save()            
+            if request.headers.get('HX-Request'):
+                return render(request, 'projects/partials/list_projects.html', {'projects': projects})            
+
+    context = {'form': form, 'projects': projects}
+    template = 'projects/partials/list_projects.html' if request.headers.get('HX-Request') else 'projects/projects.html'
+        
+    return render(request, template, context)
 
 @login_required
 def organizations(request):

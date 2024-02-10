@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, TaskChangeRequest, Organization, UserProfile, OrganizationInvitation, OrganizationMember, TaskHistory, Notification
+from .models import Task, TaskChangeRequest, Organization, UserProfile, OrganizationInvitation, OrganizationMember, TaskHistory, Notification, Project
 
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'due_date', 'status')  
@@ -41,3 +41,8 @@ class NotificationAdmin(admin.ModelAdmin):
     search_fields = ['user']     
 
 admin.site.register(Notification, NotificationAdmin)
+
+class ProjectAdmin(admin.ModelAdmin):
+    search_fields = ['user']     
+
+admin.site.register(Project, ProjectAdmin)

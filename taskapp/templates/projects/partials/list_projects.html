@@ -1,0 +1,11 @@
+<div id="list-container">
+  {% for project in projects %}
+    <div id="project-item-{{ project.id }}">
+      <div>Name - {{project.name}}</div>     
+      <div>Owner - {{project.owner}}</div>                           
+    </div> 
+  {% endfor %}
+  {% if error %}
+    <p>{{ error }}</p>  
+  {% endif %}   
+</div>
