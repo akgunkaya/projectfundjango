@@ -11,8 +11,7 @@ from datetime import timedelta
 from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
-#TODO Create functionality for creating a Project it should have a name a foreignkey organization an owner
-
+#TODO Create functionality for adding projects to tasks as a foreign key of the task model
 
 # Create your views here.
 # Home page
@@ -150,27 +149,31 @@ def task_change_request(request, task_id):
 
 @login_required
 def projects(request):
-    form = CreateProjectForm
+    form = CreateProjectForm()
     current_user = request.user
     user_profile = get_user_profile(current_user)
-    selected_organization = user_profile.selected_organization    
-    
+    selected_organization = user_profile.selected_organization
+    collaborators = User.objects.filter(organizationmember__organization=selected_organization)
     projects = Project.objects.filter(organization=selected_organization)
+ 
 
     if request.method == 'POST':
-        form = CreateProjectForm(request.POST)        
+        form = CreateProjectForm(request.POST)
+        print(form.is_valid())
         if form.is_valid():
-            form.save() 
-            task = form.save(commit=False)
-            task.owner = current_user            
-            task.save()            
+            project = form.save(commit=False)
+            project.owner = current_user
+            project.organization = selected_organization
+            project.save()
+            project.collaborators.set(form.cleaned_data['collaborators'])
             if request.headers.get('HX-Request'):
-                return render(request, 'projects/partials/list_projects.html', {'projects': projects})            
+                return render(request, 'projects/partials/list_projects.html', {'projects': projects})
 
-    context = {'form': form, 'projects': projects}
+    context = {'form': form, 'projects': projects, 'collaborators': collaborators}
     template = 'projects/partials/list_projects.html' if request.headers.get('HX-Request') else 'projects/projects.html'
-        
+
     return render(request, template, context)
+
 
 @login_required
 def organizations(request):
