@@ -53,6 +53,7 @@ class Task(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_tasks')
     owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_tasks')
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, related_name='project_tasks')
     collaborators = models.ManyToManyField(User, related_name='task_collaborators', blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
     created_at = models.DateTimeField(auto_now_add=True)

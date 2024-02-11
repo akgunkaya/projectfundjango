@@ -11,7 +11,6 @@ from datetime import timedelta
 from django.contrib import messages
 from .helpers import get_tasks_for_organization, set_task_ownership_attributes, create_task, fetch_and_set_tasks, create_task_history
 
-#TODO Create functionality for adding projects to tasks as a foreign key of the task model
 
 # Create your views here.
 # Home page
@@ -55,16 +54,16 @@ def user_logout(request):
 
 @login_required
 def tasks(request):
-    form = CreateTaskForm()
     current_user = request.user
     user_profile = get_user_profile(current_user)
-    selected_organization = user_profile.selected_organization    
+    selected_organization = user_profile.selected_organization  
+    form = CreateTaskForm(organization = selected_organization)
     error = None
 
     organization_members = OrganizationMember.objects.filter(organization=selected_organization)
 
     if request.method == 'POST':
-        form = CreateTaskForm(request.POST)
+        form = CreateTaskForm(request.POST, selected_organization)
         if form.is_valid() and selected_organization:
             task = create_task(form, current_user, selected_organization)
             create_task_history(task, current_user, "TASK_CREATED", '' )

@@ -19,7 +19,15 @@ class CreateTaskForm(forms.ModelForm):
     )
     class Meta:
         model = Task
-        fields = ['title', 'description', 'due_date'] 
+        fields = ['title', 'description', 'due_date', 'project'] 
+
+    def __init__(self, *args, **kwargs):
+        organization = kwargs.pop('organization', None)
+        super(CreateTaskForm, self).__init__(*args, **kwargs)
+        if organization is not None:
+            projects_organization = Project.objects.filter(organization=organization)
+            self.fields['project'].queryset = projects_organization    
+        
 
 class CreateOrganizationForm(forms.ModelForm):
     class Meta:
@@ -36,8 +44,7 @@ class InviteUserForm(forms.ModelForm):
         super(InviteUserForm, self).__init__(*args, **kwargs)
         if user is not None:
             # Filter organizations where the user is an owner
-            owned_organizations = OrganizationMember.objects.filter(
-                user=user, role='OWNER').values_list('organization', flat=True)
+            owned_organizations = OrganizationMember.objects.filter(user=user, role='OWNER').values_list('organization', flat=True)
             self.fields['organization'].queryset = Organization.objects.filter(id__in=owned_organizations)
 
 class TokenAuthForm(forms.ModelForm):

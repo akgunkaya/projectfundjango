@@ -1,0 +1,2 @@
+#DONE Create functionality for adding projects to tasks as a foreign key of the task model
+#TODO Complete functionality for collaborators on tasks and projects

@@ -3,7 +3,8 @@
     <div id="task-item-{{ task.id }}">
       <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li> 
       <div>Owner - {{task.owner}}</div>                     
-      <div>Assigned To - {{task.assigned_to}}</div>         
+      <div>Assigned To - {{task.assigned_to}}</div> 
+      <div>Project - {{task.project}}</div>         
       {% if task.is_owner %} 
         <h4>Transfer ownership</h4>     
         <select hx-post="{% url 'task_change_request' task_id=task.id %}" hx-target="#list-container" hx-trigger="change" name="transfer_ownership" id="transfer_ownership" hx-swap="outerHTML">
