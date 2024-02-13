@@ -1,2 +1,4 @@
 #DONE Create functionality for adding projects to tasks as a foreign key of the task model
 #TODO Complete functionality for collaborators on tasks and projects
+#TODO Remove functionality of asking to change assigned to
+#TODO Remove concept of ownership of task just keep ownership of organizations
