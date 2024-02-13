@@ -4,13 +4,5 @@
         <label for="id_name">Name:</label>
         <input type="text" id="id_name" name="name" maxlength="100" required>
     </div>
-    <div>
-        <label for="id_collaborators">Collaborators:</label>
-        <select id="id_collaborators" name="collaborators" multiple required>
-            {% for user in collaborators %}
-            <option value="{{ user.id }}">{{ user.username }}</option>
-            {% endfor %}
-        </select>
-    </div>
     <button type="submit">Submit</button>
 </form>

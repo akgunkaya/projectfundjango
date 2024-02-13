@@ -4,7 +4,7 @@ from .forms import UserCreationForm, LoginForm, CreateTaskForm, CreateOrganizati
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from .models import Task, Organization, UserProfile, OrganizationMember, TaskChangeRequest, TaskHistory, Notification, Project
+from .models import Task, Organization, UserProfile, OrganizationMember, TaskHistory, Notification, Project
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
@@ -78,81 +78,14 @@ def tasks(request):
     context = {'form': form, 'tasks': tasks, 'error': error, 'organization_members': organization_members}
     template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
     return render(request, template, context)
-
-@login_required
-def delete_task(request, task_id):
-    current_user = request.user
-    task = get_object_or_404(Task, pk=task_id)       
-
-    if request.method =='POST':
-        if task.owner != request.user:
-            error = "You are not authorized to delete this task."
-        else:
-            task.delete()
-            tasks = get_tasks_for_organization(task.organization)
-            set_task_ownership_attributes(tasks, current_user)               
-            error = "Task deleted successfully."
-       
-    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
-    
-@login_required
-def task_change_request(request, task_id):    
-    current_user = request.user
-    task = get_object_or_404(Task, pk=task_id)
-    tasks = fetch_and_set_tasks(task.organization, current_user)
-    selected_user = None
-    change_type = None
-    changeMessage = None
-
-    # Extract the relevant data from the request
-    if request.POST.get('transfer_ownership'):
-        selected_user = User.objects.get(username=request.POST.get('transfer_ownership'))
-        change_type = 'OWNER'
-        changeMessage = f'{current_user} is requesting to transfer Task ID:{task_id} to you.'
-
-    elif request.POST.get('assign_task'):
-        selected_user = User.objects.get(username=request.POST.get('assign_task'))
-        change_type = 'ASSIGNED_TO'
-        changeMessage = f'{current_user} is requesting to assign Task ID:{task_id} to you.'        
-
-    
-    create_task_history(task, selected_user, change_type, '' )
-    # Check if a similar change request already exists
-    existing_request = TaskChangeRequest.objects.filter(
-        task=task,
-        current_user = current_user,
-        new_user=selected_user,
-        change_type=change_type
-    )
-
-    if not existing_request.exists():
-        # Create the change request only if it doesn't already exist
-        existing_request = TaskChangeRequest.objects.create(
-            task=task,
-            current_user = current_user,
-            new_user=selected_user,
-            change_type=change_type,            
-        )
-        error = 'Change request created'
-    else:
-        error = 'Change request already exists'
-    
-    Notification.objects.create(
-        user=selected_user,
-        related_id = existing_request.id,
-        message = changeMessage,
-        allow_confirm = True
-    )
-    
-    return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})    
-
+  
+     
 @login_required
 def projects(request):
     form = CreateProjectForm()
     current_user = request.user
     user_profile = get_user_profile(current_user)
     selected_organization = user_profile.selected_organization
-    collaborators = User.objects.filter(organizationmember__organization=selected_organization)
     projects = Project.objects.filter(organization=selected_organization)
  
 
@@ -160,15 +93,13 @@ def projects(request):
         form = CreateProjectForm(request.POST)
         print(form.is_valid())
         if form.is_valid():
-            project = form.save(commit=False)
-            project.owner = current_user
+            project = form.save(commit=False)            
             project.organization = selected_organization
             project.save()
-            project.collaborators.set(form.cleaned_data['collaborators'])
             if request.headers.get('HX-Request'):
                 return render(request, 'projects/partials/list_projects.html', {'projects': projects})
 
-    context = {'form': form, 'projects': projects, 'collaborators': collaborators}
+    context = {'form': form, 'projects': projects}
     template = 'projects/partials/list_projects.html' if request.headers.get('HX-Request') else 'projects/projects.html'
 
     return render(request, template, context)
@@ -350,67 +281,3 @@ def notifications(request):
     current_user = request.user
     notifications = Notification.objects.filter(user = current_user)
     return render(request, 'notifications/notifications.html', {'notifications': notifications})  
-
-@login_required
-def accept_notification(request, notification_id):
-    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
-    notification = get_object_or_404(Notification, related_id=notification_id)    
-    task = change_request.task
-    message = None
-
-    if change_request.change_type == 'OWNER':
-        task.owner = change_request.new_user
-        message = f'User {change_request.new_user} has Accepted Ownership of Task ID: {change_request.task.id}'
-    elif change_request.change_type == 'ASSIGNED_TO':
-        task.assigned_to = change_request.new_user
-        message = f'User {change_request.new_user} has Accepted Assignment of Task ID: {change_request.task.id}'
-
-    task.save()
-    
-    change_request.task.save()
-    change_request.is_accepted = True
-    change_request.is_archived = True
-    notification.is_archived = True
-    change_request.save()
-    notification.save()
-
-    Notification.objects.create(
-        user=change_request.current_user,  
-        related_id = change_request.task.id,
-        message = message,
-        allow_confirm = False
-    )    
-
-    return HttpResponse('Change request accepted')
-
-@login_required
-def decline_notification(request, notification_id):
-    change_request = get_object_or_404(TaskChangeRequest, id=notification_id)
-    notification = get_object_or_404(Notification, related_id=notification_id)    
-
-    user = change_request.new_user
-    task = change_request.task
-    reason = request.POST.get('decline_reason')  
-
-    if change_request.change_type == 'OWNER':
-        history_type = "OWNER_REQUEST_DECLINED"
-        message = f'User {change_request.new_user} has Declined Ownership of Task ID: {change_request.task.id}'
-    elif change_request.change_type == 'ASSIGNED_TO':
-        history_type = "ASSIGN_TO_REQUEST_DECLINED"
-        message = f'User {change_request.new_user} has Declined Assignment of Task ID: {change_request.task.id}'
-
-    change_request.is_archived = True
-    notification.is_archived = True
-    change_request.save()        
-    notification.save()
-
-    Notification.objects.create(
-        user=change_request.current_user,    
-        related_id = change_request.task.id,            
-        message = message,
-        allow_confirm = False
-    )       
-
-    create_task_history(task, user, history_type, reason)
-    return HttpResponse('Change request declined')
-

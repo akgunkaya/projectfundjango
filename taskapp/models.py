@@ -12,8 +12,6 @@ class Organization(models.Model):
 class Project(models.Model):
     name = models.CharField(max_length=100)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='organization_project')
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_projects')
-    collaborators = models.ManyToManyField(User, related_name='project_collaborators')
 
     def __str__(self):
         return self.name
@@ -52,7 +50,6 @@ class Task(models.Model):
     due_date = models.DateField()
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_tasks')
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_tasks')
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, related_name='project_tasks')
     collaborators = models.ManyToManyField(User, related_name='task_collaborators', blank=True)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='TODO')
@@ -62,30 +59,6 @@ class Task(models.Model):
     def __str__(self):
         return self.title
     
-class TaskChangeRequest(models.Model):
-    TASK_CHANGE_TYPE_CHOICES = [
-        ('OWNER', 'owner'),
-        ('ASSIGNED_TO', 'assigned'),
-    ]
-
-    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True)
-    task_title = models.CharField(max_length=100, blank=True, null=True) 
-    current_user = models.ForeignKey(User, related_name='task_change_requests_current_user', on_delete=models.SET_NULL, null=True, blank=True)
-    new_user = models.ForeignKey(User, related_name='task_change_requests', on_delete=models.SET_NULL, null=True, blank=True)
-    change_type = models.CharField(max_length=20, choices=TASK_CHANGE_TYPE_CHOICES)
-    is_accepted = models.BooleanField(default=False)
-    is_archived = models.BooleanField(default=False)
-    request_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        new_user_name = self.new_user.get_full_name() or self.new_user.username
-        return f"Request to {new_user_name} has been sent to change {self.get_change_type_display()} status"      
-
-    def save(self, *args, **kwargs):
-        if self.task:
-            self.task_title = self.task.title
-        super().save(*args, **kwargs)
-
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)    
     message = models.CharField(max_length=255)

@@ -59,4 +59,4 @@ class TokenAuthForm(forms.ModelForm):
 class CreateProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['name', 'collaborators']
+        fields = ['name']
