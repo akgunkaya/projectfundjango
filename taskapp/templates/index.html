@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Homepage{% endblock %}
 {% block content %}
-  <h1>Homepage</h1>
-  {% if user.is_authenticated %}
-  <!-- Content for logged-in users -->
-  <h2>Logged in</h2>
-  {% else %}
-    <!-- Content for guests -->
-  {% endif %}
+    <h1>Homepage</h1>
+    {% if user.is_authenticated %}    
+        <h2>Logged in</h2>
+    {% else %}        
+    {% endif %}
 
 {% endblock %}

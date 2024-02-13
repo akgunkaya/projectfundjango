@@ -1,50 +1,12 @@
 <div id="list-container">
-  {% for task in tasks %}
-    <div id="task-item-{{ task.id }}">
-      <li>{{ task }} - {{ task.description }} - {{task.due_date}}</li> 
-      <div>Assigned To - {{task.assigned_to}}</div> 
-      <div>Project - {{task.project}}</div>         
-      {% if task.is_owner %} 
-        <h4>Transfer ownership</h4>     
-        <select hx-post="{% url 'task_change_request' task_id=task.id %}" hx-target="#list-container" hx-trigger="change" name="transfer_ownership" id="transfer_ownership" hx-swap="outerHTML">
-          <option value="" disabled selected>Select User</option>
-          {% for user in task.users %}
-              <option value="{{ user}}">
-                  {{ user.get_full_name|default:user.username }}
-              </option>
-          {% endfor %}
-        </select>  
-        {% for change_request in task.change_requests  %}                 
-          {% if change_request.is_archived is not True and change_request.change_type == 'OWNER' %}          
-            <p>
-              {{change_request}}                      
-            </p>            
-          {% endif %}
-        {% endfor %}        
-        <h4>Assign task to user</h4>     
-        <select hx-post="{% url 'task_change_request' task_id=task.id %}" hx-target="#list-container" hx-trigger="change" name="assign_task" id="assign_task" hx-swap="outerHTML">
-          <option value="" disabled selected>Select User</option>
-          {% for organization_member in organization_members %}
-              <option value="{{organization_member.user}}">
-                  {{ organization_member.user.get_full_name|default:organization_member.user.username }}
-              </option>
-          {% endfor %}
-        </select> 
-        {% for change_request in task.change_requests  %}
-          {% if change_request.is_archived is not True and change_request.change_type == 'ASSIGNED_TO' %}          
-            <p>
-              {{change_request}}                      
-            </p>            
-          {% endif %}
-        {% endfor %}          
-        <h4>Delete Task</h4>         
-        <button hx-post="{% url 'delete_task' task.id %}" hx-confirm="Are you sure?" hx-target="#list-container" hx-swap="outerHTML">
-          Delete
-        </button> 
-      {% endif %}
-    </div> 
-  {% endfor %}
-  {% if error %}
-    <p>{{ error }}</p>  
-  {% endif %}   
+	{% for task in tasks %}
+		<div id="task-item-{{ task.id }}">
+			<li>{{ task }} - {{ task.description }} - {{task.due_date}}</li> 
+			<div>Assigned To - {{task.assigned_to}}</div> 
+			<div>Project - {{task.project}}</div>         
+		</div> 
+	{% endfor %}
+	{% if error %}
+		<p>{{ error }}</p>  
+	{% endif %}   
 </div>
