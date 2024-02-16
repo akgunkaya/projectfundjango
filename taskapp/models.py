@@ -62,9 +62,6 @@ class Task(models.Model):
 class Notification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)    
     message = models.CharField(max_length=255)
-    related_id = models.IntegerField(null=True)
-    is_archived = models.BooleanField(default=False)
-    allow_confirm = models.BooleanField(default=False)
 
     def __str__(self):
         return self.message
