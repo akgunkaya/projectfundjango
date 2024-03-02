@@ -16,6 +16,9 @@ def get_users_from_organization_members(organization, current_user):
 def set_task_ownership_attributes(tasks, current_user):
     for task in tasks:
         task.users = get_users_from_organization_members(task.organization, current_user)
+        collaborators = task.collaborators.all()
+        task.collaborators_text = ", ".join([user.username for user in collaborators])
+
 
 def create_task(form, user, organization):    
     task = form.save(commit=False)
@@ -23,6 +26,7 @@ def create_task(form, user, organization):
     task.owner = user
     task.assigned_to = user         
     task.save()
+    task.collaborators.set(form.cleaned_data['collaborators'])
     return task
 
 def create_task_history(task, changed_by, change_type, notes):

@@ -1,12 +1,14 @@
 <div id="list-container">
-	{% for task in tasks %}
-		<div id="task-item-{{ task.id }}">
-			<li>{{ task }} - {{ task.description }} - {{task.due_date}}</li> 
-			<div>Assigned To - {{task.assigned_to}}</div> 
-			<div>Project - {{task.project}}</div>         
-		</div> 
-	{% endfor %}
-	{% if error %}
-		<p>{{ error }}</p>  
-	{% endif %}   
+  {% for task in tasks %}
+  <div id="task-item-{{ task.id }}">
+    <div>{{ task }} - {{ task.description }} - {{task.due_date}}</div>
+    <div>Assigned To - {{task.assigned_to}}</div>
+    <div>Project - {{task.project}}</div>
+    {% if task.collaborators_text %}
+    <div>Collaborators: {{ task.collaborators_text }}</div>
+    {% endif %}
+  </div>
+  {% endfor %} {% if error %}
+  <p>{{ error }}</p>
+  {% endif %}
 </div>

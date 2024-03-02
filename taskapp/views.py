@@ -57,24 +57,24 @@ def tasks(request):
     current_user = request.user
     user_profile = get_user_profile(current_user)
     selected_organization = user_profile.selected_organization  
-    form = CreateTaskForm(organization = selected_organization)
+    form = CreateTaskForm(organization = selected_organization, current_user = current_user)
     error = None
 
     organization_members = OrganizationMember.objects.filter(organization=selected_organization)
 
     if request.method == 'POST':
-        form = CreateTaskForm(request.POST, selected_organization)
+        form = CreateTaskForm(request.POST, selected_organization, current_user)
         if form.is_valid() and selected_organization:
             task = create_task(form, current_user, selected_organization)
             create_task_history(task, current_user, "TASK_CREATED", '' )
-            tasks = fetch_and_set_tasks(selected_organization, current_user)
+            tasks = fetch_and_set_tasks(selected_organization, current_user) 
+
             if request.headers.get('HX-Request'):
                 return render(request, 'tasks/partials/list_tasks.html', {'tasks': tasks, 'error': error})
             return redirect('tasks')
         error = "You must select an organization before creating tasks." if not selected_organization else "Oops, something went wrong."
 
-    tasks = fetch_and_set_tasks(selected_organization, current_user) if selected_organization else []
-
+    tasks = fetch_and_set_tasks(selected_organization, current_user) if selected_organization else []    
     context = {'form': form, 'tasks': tasks, 'error': error, 'organization_members': organization_members}
     template = 'tasks/partials/list_tasks.html' if request.headers.get('HX-Request') else 'tasks/tasks.html'
     return render(request, template, context)

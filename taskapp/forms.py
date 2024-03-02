@@ -19,15 +19,18 @@ class CreateTaskForm(forms.ModelForm):
     )
     class Meta:
         model = Task
-        fields = ['title', 'description', 'due_date', 'project'] 
+        fields = ['title', 'description', 'due_date', 'project', 'collaborators'] 
 
     def __init__(self, *args, **kwargs):
         organization = kwargs.pop('organization', None)
+        current_user = kwargs.pop('current_user', None)
         super(CreateTaskForm, self).__init__(*args, **kwargs)
-        if organization is not None:
+        if organization is not None:            
             projects_organization = Project.objects.filter(organization=organization)
-            self.fields['project'].queryset = projects_organization    
-        
+            self.fields['project'].queryset = projects_organization 
+            
+            organization_members = OrganizationMember.objects.filter(organization=organization).exclude(user=current_user)
+            self.fields['collaborators'].queryset = User.objects.filter(organizationmember__in=organization_members)
 
 class CreateOrganizationForm(forms.ModelForm):
     class Meta:
