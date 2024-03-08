@@ -2,7 +2,11 @@
 #DONE Remove functionality of asking to change assigned to
 #DONE Remove concept of ownership of task just keep ownership of organizations
 #DONE Complete functionality for collaborators on tasks and projects
+#DONE Install Tailwind CSS and Flowbite
+#DONE Add sidebar
+#DONE Make the project dark mode
 
-#TODO Rewrite assign to functionality however any collaborator on a task can reassign it to anyone in the organization
+#TODO Add button and modal to create tasks
+#TODO Add functionality to let users reassign tasks
 
 #BUG When project is created without a selected organisation there is an error but not visible to user
