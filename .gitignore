@@ -137,3 +137,34 @@ GitHub.sublime-settings
 .history
 
 .DS_Store
+
+# Node modules
+# Folder for installed node modules
+node_modules/
+
+# Logs
+# npm debug log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+# Files created by npm or yarn to lock the installed module versions
+package-lock.json
+yarn.lock
+
+# Distribution / build
+# Build folder for compiled/transpiled/optimized output
+dist/
+build/
+
+# Cache
+# Cache used by various tools like babel
+.cache/
+# Cache for npm
+.npm
+
+# Specific cache directory in Django app
+CACHE/
+
+taskapp/static/src/output.css

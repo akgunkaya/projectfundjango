@@ -1,5 +1,7 @@
 <!-- templates/base.html -->
+{% load compress %}
 {% load static %}
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -9,10 +11,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <title>Project Management App</title>
-
+    {% compress css %}
+    <link rel="stylesheet" href="{% static 'src/output.css' %}">
+    {% endcompress %}
     <!-- Add CSS and JavaScript links as needed -->
 </head>
 <body>
+    
     <header>
         <!-- Navigation bar here -->
         <nav>
@@ -88,6 +93,7 @@
     
     
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     {% endblock %}    
 </body>
 </html>

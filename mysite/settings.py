@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "taskapp.apps.TaskappConfig"
+    "taskapp.apps.TaskappConfig",
+    "compressor",
 ]
 
 MIDDLEWARE = [
@@ -146,3 +147,9 @@ LOGIN_REDIRECT_URL = '/home'
 LOGOUT_REDIRECT_URL = '/login'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+COMPRESS_ROOT = 'taskapp/static'
+
+COMPRESS_ENABLED = True
+
+STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
