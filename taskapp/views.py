@@ -90,8 +90,7 @@ def projects(request):
  
 
     if request.method == 'POST':
-        form = CreateProjectForm(request.POST)
-        print(form.is_valid())
+        form = CreateProjectForm(request.POST)        
         if form.is_valid():
             project = form.save(commit=False)            
             project.organization = selected_organization
@@ -171,7 +170,7 @@ def delete_organization(request, organization_id):
     return HttpResponse('Organization deleted successfully.')
 
 @login_required
-def set_selected_organization(request, organization_id):
+def set_selected_organization(request, organization_id):    
     organization = get_object_or_404(Organization, pk=organization_id)
     user_profile = UserProfile.objects.get(user=request.user)
     user_profile.selected_organization = organization

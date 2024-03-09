@@ -36,7 +36,7 @@
             </div>
             {% if user.is_authenticated %}    
             <div class="flex items-center">
-                <p class="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
+                <p id="current-org" class="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
                     Selected Organization: {{ user.userprofile.selected_organization }}
                 </p>                
                 <div class="flex items-center ms-3">
