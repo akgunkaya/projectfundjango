@@ -12,11 +12,17 @@ class LoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
 
-
 class CreateTaskForm(forms.ModelForm):
     due_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=forms.DateInput(attrs={
+            'type': 'text', 
+            'class': 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
+            'placeholder': 'Select date',
+            'datepicker': 'datepicker',
+            'datepicker-autohide': 'datepicker-autohide'
+        })
     )
+
     class Meta:
         model = Task
         fields = ['title', 'description', 'due_date', 'project', 'collaborators'] 
@@ -25,6 +31,12 @@ class CreateTaskForm(forms.ModelForm):
         organization = kwargs.pop('organization', None)
         current_user = kwargs.pop('current_user', None)
         super(CreateTaskForm, self).__init__(*args, **kwargs)
+
+        # Apply classes to all fields except 'due_date'
+        for field_name, field in self.fields.items():
+            if field_name != 'due_date':  # Exclude due_date
+                field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
+
         if organization is not None:            
             projects_organization = Project.objects.filter(organization=organization)
             self.fields['project'].queryset = projects_organization 

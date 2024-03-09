@@ -48,11 +48,11 @@
       </aside>
       
       <div class="p-4 sm:ml-64">
-        <div class="p-4 rounded-lg ">
-            <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="p-4 rounded-lg">
+            <div class="grid grid-cols-2 gap-4 mb-4"> <!-- Adjusted to two columns -->               
                 <main>                    
                     <h1>
-                        Logged in user: {{user.username}}                
+                        Logged in user: {{ user.username }}                
                     </h1>  
                     <div id="current-org">
                         {% if user.userprofile.selected_organization %}
@@ -64,12 +64,13 @@
                     {% endblock %}
                 </main>
                 
-                <footer>
+                <footer class="col-span-2"> <!-- Spanned across two columns -->
                     <!-- Footer content -->
                 </footer>              
             </div>
         </div>
-      </div>
+    </div>
+    
       
     <script src="{% static 'js/htmx.min.js' %}"></script>
     <script>
@@ -113,6 +114,8 @@
     
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/datepicker.min.js"></script>
+
     <script>
         // On page load or when changing themes, best to add inline in `head` to avoid FOUC
         if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
