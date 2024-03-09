@@ -8,8 +8,7 @@ def global_data(request):
         {'name': 'Tasks', 'url_name': 'tasks', 'icon': 'task'},
         {'name': 'Projects', 'url_name': 'projects', 'icon': 'view_list'},
         {'name': 'Organizations', 'url_name': 'organizations', 'icon': 'corporate_fare'},
-        {'name': 'Notifications', 'url_name': 'notifications', 'icon': 'notifications'},
-        {'name': 'Log out', 'url_name': 'logout', 'icon': 'logout'}
+        {'name': 'Notifications', 'url_name': 'notifications', 'icon': 'notifications'},        
     ]
 
 

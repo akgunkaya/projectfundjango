@@ -167,4 +167,4 @@ build/
 # Specific cache directory in Django app
 CACHE/
 
-taskapp/static/src/output.css
+static/src/output.css
