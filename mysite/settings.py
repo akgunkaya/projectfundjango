@@ -57,7 +57,7 @@ ROOT_URLCONF = "mysite.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ['templates'],
+        'DIRS': [BASE_DIR / 'templates'], 
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -139,6 +139,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -149,8 +151,12 @@ LOGOUT_REDIRECT_URL = '/login'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-COMPRESS_ROOT = 'taskapp/static'
+COMPRESS_ROOT = BASE_DIR / 'static'
 
 COMPRESS_ENABLED = True
 
-STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    'compressor.finders.CompressorFinder',
+]
