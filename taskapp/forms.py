@@ -7,10 +7,19 @@ class SignupForm(UserCreationForm):
     class Meta:
         model = User 
         fields = ['username', 'password1', 'password2']
+    def __init__(self, *args, **kwargs):
+        super(SignupForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
 
 class LoginForm(forms.Form):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
+    def __init__(self, *args, **kwargs):
+        super(LoginForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
+
 
 class CreateTaskForm(forms.ModelForm):
     due_date = forms.DateField(
@@ -48,15 +57,22 @@ class CreateOrganizationForm(forms.ModelForm):
     class Meta:
         model = Organization
         fields = ['name'] 
+    def __init__(self, *args, **kwargs):
+        super(CreateOrganizationForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
 
 class InviteUserForm(forms.ModelForm):
     class Meta:
         model = OrganizationInvitation
         fields = ['email', 'organization']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):        
         user = kwargs.pop('user', None)
         super(InviteUserForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
+
         if user is not None:
             # Filter organizations where the user is an owner
             owned_organizations = OrganizationMember.objects.filter(user=user, role='OWNER').values_list('organization', flat=True)
@@ -69,9 +85,18 @@ class TokenAuthForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super(TokenAuthForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
         self.initial['token'] = ''
 
 class CreateProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['name']
+        fields = ['name']        
+    def __init__(self, *args, **kwargs):
+        super(CreateProjectForm, self).__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white'
+
+
+            

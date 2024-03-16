@@ -1,8 +1,5 @@
 <form method="POST" hx-post="{% url 'projects' %}" hx-target="#projects-response" hx-swap="innerHTML">
     {% csrf_token %}
-    <div>
-        <label for="id_name">Name:</label>
-        <input type="text" id="id_name" name="name" maxlength="100" required>
-    </div>
+    {{ form.as_div }}
     <button type="submit">Submit</button>
 </form>
